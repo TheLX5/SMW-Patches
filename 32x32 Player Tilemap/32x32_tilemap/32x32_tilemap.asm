@@ -1,9 +1,9 @@
-@asar 1.50
+@asar 1.70
 ;32×32 player tilemap patch
 ;by Ladida
 
 print ""
-print " 32×32 player tilemap patch v1.2 "
+print " 32x32 player tilemap patch v1.3 "
 print "            by Ladida            "
 print " =============================== "
 print ""
@@ -37,6 +37,7 @@ endif
 
 org remap_rom($00A300)
 autoclean JML MarioGFXDMA
+RTS
 
 org remap_rom($00E370)
 BEQ +
@@ -171,7 +172,7 @@ PLA : STA remap_ram($0D86)
 SEP #$20
 
 .skipall
-JML remap_rom($00A38F)
+JML remap_rom($00A304)
 
 .vramtbl
 dw $6300,$6200,$6100,$6000
