@@ -82,9 +82,26 @@ endif
 
 	!ROM_AniAddress			= read3($00A391)
 
-!custom_powerups = 0
-if read2($00D067|!bank) == $DEAD
-	!custom_powerups = 1
+
+if read1($05B113) != $69
+	!offset = 0
+	while read1($00A304+!offset) != $60
+		!offset #= !offset+4
+	endif
+	!end_offset = !offset+4
+else
+	!offset = read1($05B114)
+endif
+
+!alternate_nmi = 0
+if read2($00D067|!bank) == $DEAD	; Detects Custom Powerups
+	!alternate_nmi = 1
+endif
+if read3($00DFE2) == $DF1AB9		; Detects Mario 8x8 GFX DMAer
+	!alternate_nmi = 1
+endif
+if read1($00F636) == $5C		; Detects 32x32 Player Tilemap
+	!alternate_nmi = 1
 endif
 
 	print "Sprite Message Box v1.1"
@@ -209,33 +226,19 @@ endmacro
 org $05B10F
 	autoclean jml Main
 
+org $05B113
+	db $69
+	db !offset
 
-	!offset = 0
-if !custom_powerups == 0
-	print hex(read3($00DFE2))
-	;if  == $B91ADF
+if !alternate_nmi == 0
 	org $00A300
 		autoclean jml NMI
 else
-	if read1($05B113) != $69
-		while read1($00A304+!offset) != $60
-			!offset #= !offset+4
-		endif
-		!end_offset = !offset+4
-	else
-		!offset = read1($05B114)
-	endif
-
 	org $00A304+!offset
-	print pc
 		autoclean jml NMI
 	NMI_end:
 		rts
 endif
-
-	org $05B113
-		db $69
-		db !offset
 
 org $00A0B9
 	autoclean jsl HandleOWReload
@@ -296,7 +299,7 @@ Main:
 	INC						;  | (between here and +)
 	STA !FREERAM_OpenFinalizedFlag			; /
 	REP #%00110000					; \
-	LDA $010B|!addr					;  | Restore
+	LDA !RAM_LevelNum				;  | Restore
 	ASL #5						;  | animation
 	CLC : ADC #$001A				;  | ExGFX slot
 	TAX						;  | in buffer
@@ -674,7 +677,7 @@ endif
 ;;;;;;;;;;;;;;;;
 
 macro NMI_Return()
-if !custom_powerups == 1
+if !alternate_nmi == 1
 	JML NMI_end
 else
 	REP #$20
