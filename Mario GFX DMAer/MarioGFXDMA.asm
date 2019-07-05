@@ -1,4 +1,14 @@
-header : lorom
+	lorom
+	!sa1 = 0
+	!bank = $800000
+	!addr = $0000
+
+if read1($00FFD5) == $23	; Detects SA-1.
+	sa1rom
+	!sa1 = 1
+	!bank = $000000
+	!addr = $6000
+endif
 
 !Tile = $0C		;Tile where the extended tiles will be loaded to. Takes up 2 8x8's
 			;located in SP1
@@ -6,6 +16,7 @@ header : lorom
 
 org $00A300
 autoclean JML BEGINDMA
+RTS
 
 org $00F691
 ADC.w #BEGINXTND
@@ -87,7 +98,7 @@ freedata
 BEGINDMA:
 REP #$20
 LDX #$02
-LDY $0D84
+LDY $0D84|!addr
 BNE +
 JMP .skipall
 +
@@ -101,7 +112,7 @@ STY $2121
 LDA #$2200
 STA $4310
 TAY
-LDA $0D82
+LDA $0D82|!addr
 STA $4312
 STY $4314
 LDA #$0014
@@ -123,13 +134,13 @@ LDA #$6000
 STA $2116
 TAY
 -
-LDA $0D85,y
+LDA $0D85|!addr,y
 STA $4312
 LDA #$0040
 STA $4315
 STX $420B
 INY #2
-CPY $0D84
+CPY $0D84|!addr
 BCC -
 
 ;;
@@ -140,26 +151,26 @@ LDA #$6100
 STA $2116
 TAY
 -
-LDA $0D8F,y
+LDA $0D8F|!addr,y
 STA $4312
 LDA #$0040
 STA $4315
 STX $420B
 INY #2
-CPY $0D84
+CPY $0D84|!addr
 BCC -
 
 ;;
 ;Mario's 8x8 tiles
 ;;
 
-LDY $0D9B
+LDY $0D9B|!addr
 CPY #$02
 BEQ .skipall
 
 LDA.w #!Tile<<4|$6000
 STA $2116
-LDA $0D99
+LDA $0D99|!addr
 STA $4312
 LDY.b #BEGINXTND>>16
 STY $4314
@@ -169,7 +180,7 @@ STX $420B
 
 .skipall
 SEP #$20
-JML $00A38F
+JML $00A304|!bank
 
 
 BEGINXTND:
