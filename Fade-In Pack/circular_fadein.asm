@@ -13,6 +13,26 @@
 !false			= 0			; Don't change these.
 !true			= 1
 
+!sa1	= 0			; 0 if LoROM, 1 if SA-1 ROM.
+!dp	= $0000			; $0000 if LoROM, $3000 if SA-1 ROM.
+!addr	= $0000			; $0000 if LoROM, $6000 if SA-1 ROM.
+!bank	= $800000		; $80:0000 if LoROM, $00:0000 if SA-1 ROM.
+!bank8	= $80			; $80 if LoROM, $00 if SA-1 ROM.
+
+!sprite_slots = 12		; 12 if LoROM, 22 if SA-1 ROM.
+
+if read1($00ffd5) == $23
+	!sa1	= 1
+	!dp	= $3000
+	!addr	= $6000
+	!bank	= $000000
+	!bank8	= $00
+	
+	!sprite_slots = 22
+	
+	sa1rom
+endif
+
 org $009F37
 		autoclean JML main
 		
@@ -76,21 +96,41 @@ sqrt_lookup:
 		dw $0F7E,$0F86,$0F8E,$0F97,$0F9F,$0FA7,$0FAF,$0FB7
 		dw $0FBF,$0FC8,$0FD0,$0FD8,$0FE0,$0FE8,$0FF0,$0FF8
 		
-main:		LDY $0DAF			; Get the fade direction.
+main:		LDY $0DAF|!addr			; Get the fade direction.
 if !first_only
-		LDA $141A			; If not entering a sublevel or
-		ORA $1B9B			; in a castle animation, do the circle fade.
+		LDA $141A|!addr			; If not entering a sublevel or
+		ORA $1B9B|!addr			; in a castle animation, do the circle fade.
 		BEQ .window
 		JML $009F4C			; Otherwise, do the brightness fade.
 endif	
-	.window	PHB
+	.window
+	if !sa1 == 0
+		JSL .window_code
+	else	
+		LDA.b #.window_code
+		STA $3180
+		LDA.b #.window_code>>8
+		STA $3181
+		LDA.b #.window_code>>16
+		STA $3182
+		JSR $1E80
+	endif	
+		LDA $0D9F|!addr
+		BPL +
+		JML $009F6E
+	+	
+		JML $009F5B
+
+	.window_code
+		PHB
 		PHK
 		PLB
-		LDA #$0F			; Force highest brightness.
-		STA $0DAE
 		
-		LDY $0DAF
-		LDA $0DB0
+		LDA #$0F			; Force highest brightness.
+		STA $0DAE|!addr
+		
+		LDY $0DAF|!addr
+		LDA $0DB0|!addr
 		TAX
 		CLC
 		ADC direction,y			; Get the next value for the fade timer.
@@ -100,7 +140,7 @@ endif
 		REP #$30
 		LDA #$00FF
 		LDY #$0000
-	-	STA $04A0,y			; Clear the windowing table.
+	-	STA $04A0|!addr,y		; Clear the windowing table.
 		INY
 		INY
 		CPY #$01C0
@@ -108,11 +148,12 @@ endif
 		SEP #$30
 		
 		LDA #$80			; Disable HDMA on channel 7.
-		TRB $0D9F
+		TRB $0D9F|!addr
 		PLB
-		JML $009F5B
+		RTL
 		
-	.no_end	STA $0DB0			; Set the fade timer.
+	.no_end
+		STA $0DB0|!addr			; Set the fade timer.
 		STZ $0F
 		DEC $0F
 		SED
@@ -137,21 +178,31 @@ endif
 	++	STA $43
 		SEP #$20
 		
+	if !sa1 == 0
 		LDA radii,x
 		STA $04
 		STA $4202
 		STA $4203			; Compute radius^2.
+	else
+		STZ $2250
+		LDA radii,x
+		STA $04
+		STA $2251
+		STA $2253			; Compute radius^2.
+		STY $2252
+		STY $2254
+	endif
 		
-		LDA $0D9B
+		LDA $0D9B|!addr
 		CMP #$02
 		REP #$20
 		SEC
 		BNE .level			; If in-level, use $94 and $96.
-		LDY $0DD6			; Otherwise, use $1F17 and $1F19.
-		LDA $1F17,y
+		LDY $0DD6|!addr			; Otherwise, use $1F17 and $1F19.
+		LDA $1F17|!addr,y
 		SBC $1A
 		STA $00
-		LDA $1F19,y
+		LDA $1F19|!addr,y
 		SEC
 		SBC #$0004
 		BRA +
@@ -166,8 +217,12 @@ endif
 	+	SEC
 		SBC $1C
 		STA $02
-		
+	
+	if !sa1 == 0
 		LDA $4216
+	else
+		LDA $2306
+	endif
 		STA $05				; Get radius^2.
 		
 		REP #$10
@@ -186,12 +241,26 @@ endif
 		REP #$20
 		JMP .clr
 		
-	+	STA $4202
+	+
+	if !sa1 == 0
+		STA $4202
 		STA $4203
 		REP #$20
 		LDA $05
 		SEC
 		SBC $4216			; Compute sqrt(radius^2 - dy^2).
+	else
+		STA $2251
+		STA $2253
+		STZ $2250
+		STZ $2252
+		STZ $2254
+		
+		REP #$20
+		LDA $05
+		SEC
+		SBC $2306			; Compute sqrt(radius^2 - dy^2).
+	endif
 		CMP #$4000
 		BCS .4000
 		CMP #$1000
@@ -255,7 +324,7 @@ endif
 		SEP #$20
 		BCC +				; Clamp values > $FF to $FF, or $FE is ZSNES is being used.
 		LDA $0F
-	+	STA $04A1,y			; Set the right bound for the scanline.
+	+	STA $04A1|!addr,y		; Set the right bound for the scanline.
 		
 		REP #$20
 		LDA $00
@@ -266,7 +335,7 @@ endif
 		SEP #$20
 		BCC +				; Clamp values < $00 to $00.
 		LDA #$00
-	+	STA $04A0,y			; Set the left bound for the scanline.
+	+	STA $04A0|!addr,y		; Set the left bound for the scanline.
 		
 		REP #$20
 	.next	INY
@@ -276,13 +345,14 @@ endif
 		JMP .loop
 		
 	.clr	LDA #$00FF
-		STA $04A0,y
+		STA $04A0|!addr,y
 		BRA .next
 	+	SEP #$30
 		
 		LDA #$80			; Enable HDMA on channel 7.
-		TSB $0D9F
+		TSB $0D9F|!addr
 		PLB
-		JML $009F6E
+		RTL
+
 		
 print "Bytes inserted: ", bytes

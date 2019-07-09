@@ -13,6 +13,26 @@
 !false			= 0			; Don't change these.
 !true			= 1
 
+!sa1	= 0			; 0 if LoROM, 1 if SA-1 ROM.
+!dp	= $0000			; $0000 if LoROM, $3000 if SA-1 ROM.
+!addr	= $0000			; $0000 if LoROM, $6000 if SA-1 ROM.
+!bank	= $800000		; $80:0000 if LoROM, $00:0000 if SA-1 ROM.
+!bank8	= $80			; $80 if LoROM, $00 if SA-1 ROM.
+
+!sprite_slots = 12		; 12 if LoROM, 22 if SA-1 ROM.
+
+if read1($00ffd5) == $23
+	!sa1	= 1
+	!dp	= $3000
+	!addr	= $6000
+	!bank	= $000000
+	!bank8	= $00
+	
+	!sprite_slots = 22
+	
+	sa1rom
+endif
+
 org $009F37
 		autoclean JML main
 		
@@ -78,20 +98,40 @@ windowing:
 		db $4B,$8E,$4B,$8B,$4C,$85,$4D,$83,$4E,$82,$4F,$81,$50,$80,$51,$7F
 		db $52,$7E,$53,$7D,$55,$7B,$57,$79,$59,$77,$5B,$74,$5F,$71,$65,$6B
 		
-main:		LDY $0DAF			; Get the fade direction.
+main:		LDY $0DAF|!addr			; Get the fade direction.
 if !first_only
-		LDA $141A			; If not entering a sublevel or
-		ORA $1B9B			; in a castle animation,
+		LDA $141A|!addr			; If not entering a sublevel or
+		ORA $1B9B|!addr			; in a castle animation,
 		BEQ .window			; do the windowing fade.
 		JML $009F4C			; Otherwise, do the brightness fade.
 endif	
-	.window	PHB
+	.window	
+	if !sa1 == 0
+		JSL .window_code
+	else	
+		LDA.b #.window_code
+		STA $3180
+		LDA.b #.window_code>>8
+		STA $3181
+		LDA.b #.window_code>>16
+		STA $3182
+		JSR $1E80
+	endif	
+		LDA $0D9F|!addr
+		BPL +
+		JML $009F6E
+	+	
+		JML $009F5B
+
+	.window_code
+		PHB
 		PHK
 		PLB
 		LDA #$0F			; Force highest brightness.
-		STA $0DAE
+		STA $0DAE|!addr
 		
-		LDA $0DB0
+		LDY $0DAF|!addr
+		LDA $0DB0|!addr
 		TAX
 		CLC
 		ADC direction,y			; Get the next value for the fade timer.
@@ -101,7 +141,7 @@ endif
 		REP #$30
 		LDA #$00FF
 		LDY #$0000
-	-	STA $04A0,y			; Clear the windowing table.
+	-	STA $04A0|!addr,y			; Clear the windowing table.
 		INY
 		INY
 		CPY #$01C0
@@ -109,11 +149,11 @@ endif
 		SEP #$30
 		
 		LDA #$80			; Disable HDMA on channel 7.
-		TRB $0D9F
+		TRB $0D9F|!addr
 		PLB
-		JML $009F5B
+		RTL
 		
-	.no_end	STA $0DB0			; Set the fade timer.
+	.no_end	STA $0DB0|!addr			; Set the fade timer.
 		TXA
 		ASL
 		TAX
@@ -151,17 +191,35 @@ endif
 		
 		REP #$10
 		LDY #$0000			; On each scanline,
-	.loop	TYA
+	.loop
+	if !sa1 == 0
+		TYA
 		LSR
 		SEP #$21
 		SBC #$6F			; find the distance from the middle,
 		STA $211C
 		LDA $00
-		STA $211B
-		LDA $01
 		STA $211B			; and multiply that distance by the inverse scale.
+		LDA $01
+		STA $211B
 		REP #$21
 		LDA $2135
+	else
+		STZ $2250
+		LDA $00
+		STA $2251
+		LDA $01
+		STA $2252
+		STZ $2253
+		TYA
+		LSR
+		SEP #$21
+		SBC #$6F			; find the distance from the middle,
+		STA $2254
+		REP #$21			; and multiply that distance by the inverse scale.
+	+	NOP 
+		LDA $2308
+	endif
 		ADC #$0070
 		CMP #$00E0			; If this product isn't within the screen boundary,
 		BCS .clear			; go onto the next scanline.
@@ -169,6 +227,7 @@ endif
 		TAX
 		
 		SEP #$20
+	if !sa1 == 0
 		LDA $02
 		STA $211B
 		LDA $03
@@ -179,43 +238,74 @@ endif
 		LDA $2135			; Because mode 7 multiplication is signed, we must check
 		BPL +				; for negative values and fix them.
 		ADC $02
-	+	SEC
+	+
+	else
+		STZ $2250
+		LDA windowing,x
+		STA $2251
+		STZ $2252
+		REP #$21
+		LDA $02
+		STA $2253
+		BRA +
+	+	NOP
+		LDA $2307
+	endif
+		SEC
 		SBC $06
 		CMP #$0100
 		BPL .clear			; If the left bound is beyond the right part of the screen, clear the scanline.
 		SEP #$20
 		BCC +
 		LDA #$00
-	+	STA $04A0,y			; Set the left bound for the scanline.
+	+	STA $04A0|!addr,y		; Set the left bound for the scanline.
 		
 		LDA windowing+1,x		; Multiply the right boundary of the window by the
+	if !sa1 == 0
 		STA $211C			; windowing scale.
 		REP #$21
 		LDA $2135
 		BPL +
 		ADC $02
-	+	SEC
+	+
+	else
+		STZ $2250
+		STA $2251
+		STZ $2252
+		REP #$21
+		LDA $02
+		STA $2253
+		BRA +
+	+	NOP
+		LDA $2307
+	endif
+		SEC
 		SBC $06
 		BMI .clear			; If the right bound is beyond the left part of the screen, clear the scanline.
 		CMP #$0100
 		SEP #$20
 		BCC +				; Clamp values > $FF to $FF, or $FE is ZSNES is being used.
 		LDA $0F
-	+	STA $04A1,y			; Set the right bound for the scanline.
+	+	STA $04A1|!addr,y		; Set the right bound for the scanline.
 		REP #$20
 		BRA .next
 		
 	.clear	LDA #$00FF			; Clear the scanline.
-		STA $04A0,y
+		STA $04A0|!addr,y
 	.next	INY
 		INY
 		CPY #$01C0
+	if !sa1 == 0
 		BNE .loop
+	else	
+		BEQ +
+		JMP .loop
+	endif 
 	+	SEP #$30
 		
 		LDA #$80			; Enable HDMA on channel 7.
-		TSB $0D9F
+		TSB $0D9F|!addr
 		PLB
-		JML $009F6E
+		RTL
 		
 print "Bytes inserted: ", bytes
