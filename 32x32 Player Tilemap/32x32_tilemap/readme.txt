@@ -27,3 +27,13 @@ ExE Boss’s Changes
 - Extracted configuration to `32x32_tilemap.cfg`.
 - `ow_mario.asm` is now applied automatically when patching `32x32_tilemap.asm`, but can still be applied separately.
 - Split `AllGFX.bin` into component files and added pre-converted Icegoom’s SMW Redrawn graphics.
+
+lx5's changes:
+v1.4
+- Fixed Mario GFX being overwritten during submap transitions while the border is visible.
+- Fixed player's palette being overwritten during submap transitions while the border is visible.
+- Removed shared folder dependancy and cfg file.
+v1.3
+- Added support for other patches that needs to run code on NMI.
+- Fixed garbage tile on the print statements.
+- Updated shared folder to actually be usable on latest asar.

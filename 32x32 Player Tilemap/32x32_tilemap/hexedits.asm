@@ -1,6 +1,6 @@
 @includefrom 32x32_tilemap.asm
 
-org remap_rom($00DCEC)	;PosPointPointer
+org $00DCEC|!bank	;PosPointPointer
 db $00,$00,$00,$00,$00,$00,$00,$00	;00-07	\
 db $00,$00,$00,$00,$00,$00,$00,$00	;08-0F	|
 db $04,$02,$02,$02,$00,$00,$00,$00	;10-17	|
@@ -11,13 +11,13 @@ db $00,$00,$00,$00,$00,$00,$00,$00	;30-37	|
 db $00,$00,$00,$00,$00,$00,$00,$00	;38-3F	|
 db $00,$00,$00,$00,$00,$00	;40-45	/
 
-org remap_rom($00DD32)	;PosPoint
+org $00DD32|!bank	;PosPoint
 db $00,$08,$10,$18,$20,$28,$00,$00	;00-07
 db $00,$00,$00,$00,$00,$00,$00,$00	;08-0F
 db $00,$00,$00,$00,$00,$00,$00,$00	;10-17
 db $00,$00,$00,$00	;18-1B
 
-org remap_rom($00DD4E)	;X positions
+org $00DD4E|!bank	;X positions
 dw $FFF8,$FFF8,$0008,$0008	;[00]	Normal (facing left)
 dw $0008,$0008,$FFF8,$FFF8	;[08]	Normal (facing right)
 dw $0007,$0007,$0017,$0017	;[10]	Wall running offsets (wall on left)
@@ -51,7 +51,7 @@ dw $000D,$000D,$FFFB,$FFFB
 dw $FFFB,$FFFF,$000F,$0001
 dw $FFF9,$0000
 
-org remap_rom($00DE32)	;Y positions
+org $00DE32|!bank	;Y positions
 dw $0001,$0011,$0001,$0011	;[00]	Normal (facing left)
 dw $0001,$0011,$0001,$0011	;[08]	Normal (facing right)
 dw $000F,$001F,$000F,$001F	;[10]	Wall running offsets (wall on left)
@@ -85,10 +85,10 @@ dw $0010,$0018,$0000,$0010
 dw $0018,$0000,$0010,$0000
 dw $0010,$FFF8
 
-org remap_rom($00DFDA)	;Mario8x8Tiles
+org $00DFDA|!bank	;Mario8x8Tiles
 db $00,$20,$02,$22
 
-org remap_rom($00E18E)
+org $00E18E|!bank
 db $00,$00,$00,$00,$00,$00,$00,$00	;[00-07]
 db $00,$00,$00,$00,$00,$0D,$00,$10	;[08-0F]
 db $13,$22,$25,$28,$00,$16,$00,$00	;[10-17]
@@ -100,8 +100,8 @@ db $16,$16,$00,$00,$08	;[38-3C]
 db $00,$00,$00,$00,$00,$00,$10,$04	;[3D-44]
 db $00	;[45]
 
-org remap_rom($0485B2)	;OW Border Mario Y Position
+org $0485B2|!bank	;OW Border Mario Y Position
 dw $0007
 
-org remap_rom($04EBDA)	;OW Sparkles
+org $04EBDA|!bank	;OW Sparkles
 db $26,$27,$36,$37,$36,$27,$26

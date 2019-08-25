@@ -3,52 +3,65 @@
 ;by Ladida
 
 print ""
-print " 32x32 player tilemap patch v1.3 "
+print " 32x32 player tilemap patch v1.4 "
 print "            by Ladida            "
 print " =============================== "
 print ""
 
-incsrc 32x32_tilemap.cfg
-incsrc ../shared/shared.asm
-
 math	pri	on	;\ Asar defaults to Xkas settings instead
 math	round	off	;/ of proper math rules, this fixes that.
 
-namespace _32x32_tilemap_
+!addr	= $0000			; $0000 if LoROM, $6000 if SA-1 ROM.
+!bank	= $800000		; $80:0000 if LoROM, $00:0000 if SA-1 ROM.
+!sa1	= 0
+
+if read1($00FFD5) == $23
+	!addr	= $6000
+	!bank	= $000000
+	!sa1	= 1
+	sa1rom
+endif
 
 ;;;;;;;;;
 ;Defines;
 ;;;;;;;;;
 
-; DO NOT EDIT THOSE!!!
+; Needs to point to freespace as large as PlayerGFX.bin (only used when PlayerGFX.bin is > 64KiB)
+!Freedata	= $3C8000
+
+;;;;;;;;;
+; DO NOT EDIT THOSE BELOW!!!
 
 !PlayerGFX_size #= select(equal(readfile1("PlayerGFX.bin",$10000,$FF),readfile1("PlayerGFX.bin",$10000,$00)),select(equal(readfile1("PlayerGFX.bin",$20000,$FF),readfile1("PlayerGFX.bin",$20000,$00)),$30000,$20000),$10000)
 assert !PlayerGFX_size >= 0, "PlayerGFX.bin not found"
 assert !PlayerGFX_size <= $20000, "PlayerGFX.bin is too big, must be at most 128KiB"
 
 assert !Freedata%$8000 == 0, "Freedata must point to the start of a bank"
-if !use_sa1_mapping
+if !sa1
 	assert !Freedata&$7F0000 < $400000, "Freedata is currently unsupported in the SA-1 HiROM area"
 endif
+
+assert read1($0FFB51) != $FF, "Please insert ExGFX once to enable some Lunar Magic's ASM hacks."
+assert read1($048509) == $22, "Please save the Overworld at least once to enable some Lunar Magic's ASM hacks."
 
 ;;;;;;;;;
 ;Hijacks;
 ;;;;;;;;;
 
-org remap_rom($00A300)
+org $00A300|!bank
 autoclean JML MarioGFXDMA
 RTS
 
-org remap_rom($00E370)
+org $00E370|!bank
 BEQ +
-org remap_rom($00E381)
+org $00E381|!bank
 BNE +
-org remap_rom($00E385)
+org $00E385|!bank
 NOP #6
 +
 LDA #$F8
 
-org remap_rom($00E3B0)
+org $00E3B0|!bank
 TAX
 LDA.l excharactertilemap,x
 STA $0A
@@ -57,13 +70,23 @@ BRA +
 NOP #5
 +
 
-org remap_rom($00E3E4)
+org $00E3E4|!bank
 BRA +
-org remap_rom($00E3EC)
+org $00E3EC|!bank
 +
 
-org remap_rom($00F636)
+org $00F636|!bank
 JML tilemapmaker
+
+org $00A169|!bank
+LDA #$F0
+STA $3F
+
+org $0FFB9C|!bank
+JML skip_mario_gfx
+
+org $0FFC94|!bank
+JML fix_mario_palette
 
 incsrc hexedits.asm
 incsrc ow_mario.asm
@@ -73,7 +96,8 @@ incsrc ow_mario.asm
 ;MAIN CODE START;
 ;;;;;;;;;;;;;;;;;
 
-freedata
+freecode
+
 if !PlayerGFX_size > $10000
 	prot PlayerGFX,PlayerGFX_prot2
 else
@@ -82,8 +106,52 @@ endif
 
 FreecodeStart:
 
+skip_mario_gfx:
+LDX #$0140
+STX $4325
+PLX
+STX $2116
+STA $420B
+
+LDY #$B180
+STY $4322
+LDX #$0180
+STX $4325
+LDX #$6240
+STX $2116
+STA $420B
+
+LDY #$B380
+STY $4322
+LDX #$0980
+STX $4325
+LDX #$6340
+JML $0FFBA3|!bank
+
+fix_mario_palette:
+PHX
+LDY.b #$86
+STY $2121
+REP #$10
+LDX.w #(9*2)
+LDY.w #$86*2
+-
+LDA $213B
+STA $0703|!addr,y
+LDA $213B
+STA $0704|!addr,y
+INY #2
+DEX #2
+BPL -
+SEP #$10
+PLX
+STZ $2121
+REP #$30
+LDA #$0200
+JML $0FFC99|!bank
+
 MarioGFXDMA:
-LDY remap_ram($0D84)
+LDY $0D84|!addr
 BNE +
 JMP .skipall
 +
@@ -99,7 +167,7 @@ LDX #$86
 STX $2121
 LDA #$2200
 STA $4310
-LDA remap_ram($0D82)
+LDA $0D82|!addr
 STA $4312
 LDX #$00
 STX $4314
@@ -123,13 +191,13 @@ LDA #$6040
 STA $2116
 LDX #$04
 -
-LDA remap_ram($0D85),x
+LDA $0D85|!addr,x
 STA $4312
 LDA #$0040
 STA $4315
 STY $420B
 INX #2
-CPX remap_ram($0D84)
+CPX $0D84|!addr
 BCC -
 
 ;;
@@ -140,39 +208,39 @@ LDA #$6140
 STA $2116
 LDX #$04
 -
-LDA remap_ram($0D8F),x
+LDA $0D8F|!addr,x
 STA $4312
 LDA #$0040
 STA $4315
 STY $420B
 INX #2
-CPX remap_ram($0D84)
+CPX $0D84|!addr
 BCC -
 
 ;;
 ;New player GFX upload
 ;;
 
-LDX remap_ram($0D87)
+LDX $0D87|!addr
 STX $4314
-LDA remap_ram($0D86) : PHA
+LDA $0D86|!addr : PHA
 LDX #$06
 -
 LDA.l .vramtbl,x
 STA $2116
 LDA #$0080
 STA $4315
-LDA remap_ram($0D85)
+LDA $0D85|!addr
 STA $4312
 STY $420B
-INC remap_ram($0D86)
-INC remap_ram($0D86)
+INC $0D86|!addr
+INC $0D86|!addr
 DEX #2 : BPL -
-PLA : STA remap_ram($0D86)
+PLA : STA $0D86|!addr
 SEP #$20
 
 .skipall
-JML remap_rom($00A304)
+JML $00A304
 
 .vramtbl
 dw $6300,$6200,$6100,$6000
@@ -189,7 +257,7 @@ LDA $09
 AND #$3C00
 ASL
 ORA $01,s
-STA remap_ram($0D85)
+STA $0D85|!addr
 LDY.b #PlayerGFX>>16
 BIT $09
 BPL +
@@ -198,9 +266,9 @@ INY #$02
 BVC +
 INY
 +
-STY remap_ram($0D87)
+STY $0D87|!addr
 PLA
-JML remap_rom($00F674)
+JML $00F674|!bank
 
 incsrc excharactertilemap.asm
 
@@ -212,14 +280,14 @@ reset freespaceuse
 if !PlayerGFX_size <= $10000
 	incbin PlayerGFX.bin -> PlayerGFX
 else
-	org remap_rom(!Freedata-$8008)
+	org (!Freedata-$8008)|!bank
 		db $53,$54,$41,$52	;\ Asar complains when `db "STAR"` is encoutered
 		dw $FFFF	;| without the file starting with `;@xkas`, even
 		dw $0000	;/ when Asar only features are used
-	org remap_rom(!Freedata)
+	org !Freedata|!bank
 		PlayerGFX:
-		incbin PlayerGFX.bin -> remap_rom(!Freedata)
-	org remap_rom(!Freedata+$20000)
+		incbin PlayerGFX.bin -> !Freedata|!bank
+	org (!Freedata+$20000)|!bank
 		db $53,$54,$41,$52
 		dw clamp(!PlayerGFX_size-$10009,0,$FFF7)
 		dw clamp(!PlayerGFX_size-$10009,0,$FFF7)^$FFFF

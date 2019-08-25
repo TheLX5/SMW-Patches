@@ -13,8 +13,7 @@
 ;by Ladida
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-incsrc 32x32_tilemap.cfg
-incsrc ../shared/shared.asm
+!ow_mario_palette	= $2
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Everything below this can be edited
@@ -207,7 +206,7 @@ incsrc ../shared/shared.asm
 ;!!!!!!!!!!!!!!!GNINRAW!!!!!!!!!!!!!!
 
 
-org remap_rom($0487CB)
+org $0487CB|!bank
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -323,7 +322,7 @@ db !climb2ur,!mariox,!climb2ul,!mariox,!climb2dr,!mariox,!climb2dl,!mariox
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-org remap_rom($0489DE)
+org $0489DE|!bank
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
