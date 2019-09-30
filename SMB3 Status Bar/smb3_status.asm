@@ -1,6 +1,8 @@
 ;smb3 status bar
 ;by Ladida
+;lm300 + custom powerup support by lx5
 
+	!freeram = $7FB500
 	!dp = $0000
 	!addr = $0000
 	!bank = $800000
@@ -9,23 +11,30 @@
 
 if read1($00FFD6) == $15
 	sfxrom
+	!freeram = $7FB500
 	!dp = $6000
 	!addr = !dp
 	!bank = $000000
 	!gsu = 1
 elseif read1($00FFD5) == $23
 	sa1rom
+	!freeram = $40C600
 	!dp = $3000
 	!addr = $6000
 	!bank = $000000
 	!sa1 = 1
 endif
 
+!_custom_powerups = 0
+
+if read1($028008) == $5C
+	!_custom_powerups = 1
+endif
 
 ;DONT edit these unless you know what you're doing
-!status_tile 	= $0C00|!addr
+!status_tile 	= !freeram+$100
 !status_prop 	= !status_tile+$80	;due to shenanigans this should be above+$80
-!status_palette = $0D00|!addr		;status bar palette is here (64 bytes)
+!status_palette = !freeram		;status bar palette is here (64 bytes)
 !status_OAM	= $0EFC|!addr		;status bar OAM is here (5 tiles + 32 byte high table)
 
 
@@ -36,14 +45,14 @@ incsrc smb3_status_defines.asm
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-!l1y_end = $0BF6|!addr
-!l1y_mirror = $0BF8|!addr
-!l1y_mirror_alt = $0BFA|!addr
-!l2y_mirror = $0BFC|!addr
-!l2y_mirror_alt = $0BFE|!addr
-!l3_line1 = $0D40|!addr
-!l3_line2 = $0D42|!addr
-!hdmatbl = $0D44|!addr
+!l1y_end = !freeram+$40
+!l1y_mirror = !freeram+$40+2
+!l1y_mirror_alt = !freeram+$40+4
+!l2y_mirror = !freeram+$40+6
+!l2y_mirror_alt = !freeram+$40+8
+!l3_line1 = !freeram+$40+10
+!l3_line2 = !freeram+$40+12
+!hdmatbl = !freeram+$40+14
 
 
 
@@ -65,7 +74,9 @@ else
 	JMP LagFixPre
 endif
 
-
+org $00A0BF
+	autoclean jml HandleOWReload
+	nop #1
 
 org $008292|!bank		;run IRQ on this scanline
 LDY.b #$C0-!status_fblank
@@ -77,8 +88,6 @@ NOP #2
 org $00838F|!bank		;IRQ hijack
 autoclean JML PostStatusBar
 NOP
-
-
 
 org $05BEA2|!bank
 JML UploadStatusBar
@@ -136,6 +145,12 @@ LDA.w #!TilemapExGFX
 JSL $0FF900|!bank
 SEP #$20
 endif
+
+phb
+lda.b #!status_tile/$10000
+pha
+plb
+
 LDX #$FE
 LDY #$7F
 -
@@ -144,15 +159,18 @@ LDA $7EAD00,x
 else
 LDA.l StatusBarMAP|!bank,x
 endif
-STA !status_tile,y
+STA.w !status_tile,y
 if !TilemapExGFX >= $0080
 LDA $7EAD01,x
 else
 LDA.l StatusBarMAP|!bank+1,x
 endif
-STA !status_prop,y
+STA.w !status_prop,y
 DEX #2
 DEY : BPL -
+
+plb
+
 LDX #$33
 -
 LDA.l OAMTABLE|!bank,x
@@ -163,10 +181,11 @@ LDX.b #hdmatbl_end-hdmatbl-1
 LDA.l hdmatbl|!bank,x
 STA !hdmatbl,x
 DEX : BPL -
-STZ !l3_line1
-STZ !l3_line1+1
-STZ !l3_line2
-STZ !l3_line2+1
+LDA #$00
+STA !l3_line1
+STA !l3_line1+1
+STA !l3_line2
+STA !l3_line2+1
 +
 LDA #$28
 STA $0F30|!addr
@@ -247,89 +266,49 @@ RTS
 NOP #3
 ;;;;;;;;;;;;;;;;;;;;;;
 
+org $008E6F|!bank
+	jml status_bar_time
+
+status_bar_lives_write:
+	txa
+	sta !lives
+	rts
+	
+status_bar_score_2_write:
+	lda !score,x
+	inc
+	sta !score,x
+	rts 
+
+status_bar_score_1_write:
+	lda #$00
+	sta !score,x
+	rts
+
+status_bar_coins_write:
+	sta !coins+$1
+	txa
+	sta !coins
+	rts
+
+warnpc $008E95|!bank
 
 
 
-;multiple status bar edits
-
-org $008E6F|!bank	;Time hijack
-if !time
-	LDA $0F31|!addr
-	STA !time
-	LDA $0F32|!addr
-	STA !time+$1
-	LDA $0F33|!addr
-	STA !time+$2
-	if !ZERO_time
-		BVS +
-	else
-		BRA +	;[Time] dont convert leading zero to space (like SMB3)
-	endif
-	LDY #$00
-	-
-	LDA $0F31|!addr,y
-	BNE +
-	LDA #!ZERO_time
-	STA !time,y
-	INY
-	CPY #$02
-	BNE -
-	NOP
-	+
-	warnpc $008E95|!bank
-else
-	BRA +
-	org $008E95|!bank
-	+
-endif
-
-org $008F51|!bank	;Lives hijack
-if !lives
-	if !ZERO_lives
-		BNE +
-	else
-		BRA +
-	endif
-	LDX #!ZERO_lives
-	+
-	STX !lives
-	STA !lives+$1
-else
-	BRA +
-	org $008F5B|!bank
-	+
-endif
-
-org $008F7A|!bank	;Coins hijack
-if !coins
-	if !ZERO_coins
-		BNE +
-	else
-		BRA +
-	endif
-	LDX #!ZERO_coins
-	+
-	STA !coins+$1
-	STX !coins
-else
-	BRA +
-	org $008F84|!bank
-	+
-endif
 
 org $008EE0|!bank	;Score hijacks
 LDA !score,x
 org $008F0E|!bank
 LDA !score,x
 org $008EE7|!bank
-if !score
-	STA !score,x
+if !score != 0
+	jsr status_bar_score_3_write
 else
 	NOP #3
 endif
 org $008F15|!bank
-if !score
-	STA !score,x
+if !score != 0
+	jsr status_bar_score_3_write
 else
 	NOP #3
 endif
@@ -338,14 +317,16 @@ LDX #$00
 org $008F05|!bank
 LDX #$00
 org $009014|!bank
-if !score
-	STZ !score,x
+if !score != 0
+	jsr status_bar_score_1_write
 else
 	NOP #3
 endif
+
+
 org $009034|!bank
-if !score
-	INC !score,x
+if !score != 0
+	jsr status_bar_score_2_write
 else
 	NOP #3
 endif
@@ -376,23 +357,57 @@ org $008F1D|!bank
 +
 
 
+org $008F51|!bank	;Lives hijack
+if !lives != 0
+	if !ZERO_lives
+		BNE +
+	else
+		BRA +
+	endif
+	LDX #!ZERO_lives
+	+
+	STA !lives+$1
+	jsr status_bar_lives_write
+else
+	BRA +
+	org $008F5B|!bank
+	+
+endif
+
+org $008F7A|!bank	;Coins hijack
+if !coins != 0
+	if !ZERO_coins
+		BNE +
+	else
+		BRA +
+	endif
+	LDX #!ZERO_coins
+	+
+	jsr status_bar_coins_write
+	warnpc $008F84|!bank
+else
+	BRA +
+	org $008F84|!bank
+	+
+endif
+
 org $008F84|!bank	;near end of status bar routine, let's overwrite everything
 
-LDX $0DB3|!addr
+	LDY $0DB3|!addr
 
 if !player
-	LDY #$00
-	LDA.w chartable+2,x
+	LDX #$00
+	LDA.w chartable+2,y
 	XBA
-	LDA.w chartable,x
+	LDA.w chartable,y
 	-
-	STA !player,y
+	STA !player,x
 	XBA
-	STA !player+$80,y
+	STA !player+$80,x
 	XBA
 	INC
-	INY
-	CPY #!SIZE_player
+	INX
+	CPX #!SIZE_player
 	BCC -
 endif
 
@@ -461,6 +476,10 @@ else
 	RTS
 endif
 
+status_bar_score_3_write:
+	sta !score,x
+	rts
+
 LagFixPre:
 BEQ LagFix
 JMP $827A
@@ -484,48 +503,52 @@ autoclean JSL BigNumberHandler
 
 if !pmeter || !pmeter_icon
 	if !pmeter
-		LDY.b #!LEN_pmeter-1
+		LDX.b #!LEN_pmeter-1
 		LDA.b #!EmptyPal
 		XBA
 		LDA.b #!EmptyTri
 		-
-		STA !pmeter,y
+		STA.l !pmeter,x
 		XBA
-		STA !pmeter+$80,y
+		STA.l !pmeter+$80,x
 		XBA
-		DEY : BPL -
+		DEX : BPL -
 	endif
 	if !pmeter_icon
-		LDY #$00
+		LDX #$00
 		LDA.b #!EmptyP_PROP
 		XBA
 		LDA.b #!EmptyP_TILE
 		-
-		STA !pmeter_icon,y
+		STA.l !pmeter_icon,x
 		XBA
-		STA !pmeter_icon+$80,y
+		STA.l !pmeter_icon+$80,x
 		XBA
 		INC
-		INY
-		CPY.b #!SIZE_pmeter
+		INX
+		CPX.b #!SIZE_pmeter
 		BCC -
 	endif
 
 	if !pmeter 
 		JSR pmetermath
-		LDY $4214
+		LDX $4214
 		BEQ .skip
 		-
-		DEY
-		CPY.b #!LEN_pmeter
+		DEX
+		CPX.b #!LEN_pmeter
 		BCS -
 		BVC .notfull
 	else
 		if !pmeter_icon
-			LDA $13E4
+			LDA $13E4|!addr
 			CMP #$70
 			BCC .skip
 		endif
+	endif
+
+	if !pmeter
+	PHX
 	endif
 
 	LDA $14
@@ -552,18 +575,22 @@ if !pmeter || !pmeter_icon
 		BCC -
 		+
 	endif
-	
+
+	if !pmeter
+	PLX
+	endif
+
 	.notfull
 	if !pmeter
 		LDA.b #!FillPal
 		XBA
 		LDA.b #!FillTri
 		-
-		STA !pmeter,y
+		STA.l !pmeter,x
 		XBA
-		STA !pmeter+$80,y
+		STA.l !pmeter+$80,x
 		XBA
-		DEY : BPL -
+		DEX : BPL -
 	endif
 endif
 .skip
@@ -604,6 +631,43 @@ RTL
 
 
 freecode
+
+status_bar_time:
+	phb
+	phk
+	plb
+
+	lda.b #!status_tile>>16
+	sta $0F
+
+if !time != 0
+	print pc
+	LDA $0F31|!addr
+	STA !time+$0
+	LDA $0F32|!addr
+	STA !time+$1
+	LDA $0F33|!addr
+	STA !time+$2
+	if !ZERO_time
+		BVS +
+	else
+		BRA +	;[Time] dont convert leading zero to space (like SMB3)
+	endif
+
+	LDX #$00
+	-
+	LDA $0F31|!addr,x
+	BNE +
+	LDA #!ZERO_time
+	STA !time,x
+	INX
+	CPX #$02
+	BNE -
+	+
+endif
+	plb
+	JML $008E95|!bank
+
 incsrc !CustomCode
 
 --
@@ -611,42 +675,45 @@ SEP #$20
 BRA ++
 
 BigNumberHandler:
-LDX #$19
+LDX #$1E
 -
-LDA.l .counters+4,x
+LDA.l .counters+5,x
 BEQ ++
+lda.l .counters+2,x
+sta $02
+sta $05
 REP #$21
 LDA.l .counters,x
 BEQ --
 STA $00
 ADC #$0020
-STA $02
+STA $03
 SEP #$20
-LDA.l .counters+2,x
+LDA.l .counters+3,x
 TAY
 --
-LDA ($00),y
+LDA [$00],y
 BEQ +++
-CMP.l .counters+3,x
+CMP.l .counters+4,x
 BEQ +
 +++
 CLC : ADC.b #!TILE_big_top
-STA ($00),y
+STA [$00],y
 ADC.b #!TILE_big_bottom
 +
-STA ($02),y
+STA [$03],y
 DEY : BPL --
 ++
-DEX #5 : BPL -
+DEX #6 : BPL -
 RTL
 
 .counters
-dw !coins : db $01,!ZERO_coins,!SIZE_coins
-dw !lives : db $01,!ZERO_lives,!SIZE_lives
-dw !score : db $05,!ZERO_score,!SIZE_score
-dw !time : db $02,!ZERO_time,!SIZE_time
-dw !bonus : db $01,!ZERO_bonus,!SIZE_bonus
-dw !yicoins : db $00,$00,!SIZE_yicoins
+dl !coins : db $01,!ZERO_coins,!SIZE_coins
+dl !lives : db $01,!ZERO_lives,!SIZE_lives
+dl !score : db $05,!ZERO_score,!SIZE_score
+dl !time : db $02,!ZERO_time,!SIZE_time
+dl !bonus : db $01,!ZERO_bonus,!SIZE_bonus
+dl !yicoins : db $00,$00,!SIZE_yicoins
 
 
 -
@@ -655,6 +722,12 @@ STZ $2111
 STZ $2111
 STZ $2112
 STZ $2112
+if !sa1
+STZ $1D04	;clear these just to be safe
+STZ $1D05
+STZ $1D06
+STZ $1D02
+endif
 JML $0082B0|!bank
 
 ;below code is for the normal screen
@@ -662,6 +735,12 @@ JML $0082B0|!bank
 PreStatusBar:
 LDA $0D9B|!addr
 BNE -
+LDA $0100|!addr
+CMP #$04	;this makes it so the title screen has correct $212C-$212F values
+BEQ -
+CMP #$05
+BEQ -
+
 LDA #$53 : STA $2109
 LDA $3E : STA $2105
 LDA $40 : STA $2131	;color math
@@ -686,8 +765,9 @@ LDA #$2202 : STA $4310
 TAX : STX $420B
 ;LDY $1426|!addr : BNE +		;fix message box
 LDA #$1800 : STA $4310
+LDA.w #!status_tile>>8 : STA $4313
 LDA.w #!status_tile : STA $4312
-LDA !l3_line1 : BEQ +	;fix initial write
+LDA !l3_line1  : BEQ +	;fix initial write
 STA $2116
 LDY #$20 : STY $4315
 STX $420B
@@ -701,7 +781,7 @@ ORA #$0400 : STA $2116
 STY $4315
 STX $420B
 LDA #$0080 : STA $2115
-INC $4311
+LDA #$1900 : STA $4310
 LDA.w #!status_prop : STA $4312
 LDA !l3_line1 : STA $2116
 STY $4315
@@ -716,11 +796,25 @@ ORA #$0400 : STA $2116
 STY $4315
 STX $420B
 +
+LDY.b #!hdmatbl>>16 : STY $4304
 LDA.w #!hdmatbl : STA $4302
 LDA #$1103 : STA $4300		;layer 3 X/Y HDMA
 SEP #$20
 LSR
 TSB $0D9F|!addr
+
+if !sa1
+;code for setting up a custom sa-1 irq
+LDA.b #PostStatusBar
+STA $1D04
+LDA.b #PostStatusBar>>8
+STA $1D05
+LDA.b #PostStatusBar>>16
+STA $1D06
+INC $1D02
+LDX #$A1
+endif
+
 JML $0082B0|!bank
 
 
@@ -730,15 +824,31 @@ JML $0082B0|!bank
 
 -
 BIT $4212 : BVC $FB		;wait for h-blank
+if !sa1
+STZ $1D04	;clear these just to be safe
+STZ $1D05
+STZ $1D06
+STZ $1D02
+RTL		;return to the irq handler
+else
 JML $008394|!bank
+endif
 
 PostStatusBar:
+if !sa1
+;lda $4200
+;bne -
+phb
+phk
+plb
+else
 BNE -
+endif
 PHD
 REP #$30
 LDA #$2100 : TCD		;set direct page to $2100
 LDA.w #!status_palette : STA $4312
-LDA.w #$4000|(!bank>>16) : STA $4314
+LDA.w #$4000|(!status_palette>>16) : STA $4314
 LDA #$2202 : STA $4310		;set up first DMA (palette)
 SEP #$30
 TAY
@@ -760,6 +870,7 @@ STZ $30				;disable subscreen & color math
 LDA #$0700 : STA $26		;window borders
 LDX #$04 : STX $4311
 LDA #$00F6 : STA $02		;FirstSprite = x7F
+LDX.b #!status_OAM>>16 : STX $4314
 LDA.w #!status_OAM : STA $4312
 STY $420B
 DEY : STY $05			;gfx mode 1 (layer 3 standard priority)
@@ -807,7 +918,17 @@ STA !l2y_mirror
 SEC : SBC #$0008
 STA !l2y_mirror_alt
 SEP #$30
+
+if !sa1
+STZ $1D04	;clear these just to be safe
+STZ $1D05
+STZ $1D06
+STZ $1D02
+PLB
+RTL		;return to the irq handler
+else
 JML $0083B2|!bank
+endif
 
 hdmatbl:
 db $80 : dw $FFFF,$FFFF
@@ -820,7 +941,24 @@ db $01 : dw $0000+!x_off,$0000
 db $00
 .end
 
+HandleOWReload:
+	rep #$20
+	ldy.b #!hdmatbl>>16 : STY $4304
+	LDA.w #!hdmatbl : STA $4302
+	LDA #$1103 : STA $4300		;layer 3 X/Y HDMA
+	sep #$20
+	lsr
+	tsb $0D9F|!addr
+	stz $1D04	;clear these just to be safe
+	stz $1D05
+	stz $1D06
+	stz $1D02
 
+	lda $0DBE|!addr
+	bpl .code_00A0C7
+	jml $00A0C4|!bank
+.code_00A0C7
+	jml $00A0C7|!bank
 
 ItemBoxFix:
 	LDA $0D9B|!addr
@@ -839,17 +977,44 @@ ItemBoxFix:
 	STA $0200|!addr,y
 	LDA #$0F
 	STA $0201|!addr,y
+if !_custom_powerups == 1
+	rep #$20
+	lda.w #read2($02800C)+$2
+	sta $8A
+	lda.w #read2($02800D)
+	sta $8B
+	txa
+	asl
+	tay
+	sep #$20
+	lda [$8A],y
+else
+	LDA $8DF9,x
+endif
+	STA $0202|!addr,y
 	JSR .star
 	STA $0203|!addr,y
-	LDA $8DF9,x
-	STA $0202|!addr,y
 	TYA
 	LSR #2
 	TAY
 	LDA #$02
 	STA $0420|!addr,y
 .ret	RTL
-.star	LDA $8E01,x
+.star
+if !_custom_powerups == 1
+	tax
+	dey
+	lda [$8A],y
+	cpx #$03
+	bne +
+	lda $13
+	lsr 
+	and #$03
+	tax
+	lda $8DFE,x
++	
+else	
+	LDA $8E01,x
 	CPX #$03
 	BNE +
 	LDA $13
@@ -859,6 +1024,7 @@ ItemBoxFix:
 	LDA $8DFE,x
 	LDX #$03
 +	ORA #$30
+endif	
 	RTS
 .level
 if !itemboxtype == 1
@@ -868,40 +1034,66 @@ if !itemboxtype == 1
 	BEQ .ret
 	LDA.b #!sprite0_YX>>8
 	STA !status_OAM+1
+if !_custom_powerups == 1
+	rep #$20
+	lda.w #read2($02800C)+$2
+	sta $8A
+	lda.w #read2($02800D)
+	sta $8B
+	txa
+	asl
+	tay
+	sep #$20
+	lda [$8A],y
+	sta !status_OAM+2
+	jsr .star
+	sta !status_OAM+3
+else
 	JSR .star
 	STA !status_OAM+3
 	LDA $8DF9,x
 	STA !status_OAM+2
+endif 
 elseif !itemboxtype == 2
+	phb
+	lda.b #!status_tile/$10000
+	pha
+	plb
 	LDA $0DC2|!addr
 	ASL : TAX
 	LDY.b #!itembox-!status_tile
-	LDA.l itemboxtbl|!bank,x : STA !status_tile,y
-	LDA.l itemboxtbl|!bank+1,x : STA !status_prop,y
+	LDA.l itemboxtbl|!bank,x : STA.w !status_tile,y
+	LDA.l itemboxtbl|!bank+1,x : STA.w !status_prop,y
+	plb
 elseif !itemboxtype == 3
+	phb
+	lda.b #!status_tile/$10000
+	pha
+	plb
 	LDA $0DC2|!addr
 	ASL : TAX
 	LDY.b #!itembox-!status_tile
 	LDA.l itemboxtbl|!bank+1,x
-	STA !status_prop,y
-	STA !status_prop+1,y
-	STA !status_prop+$20,y
-	STA !status_prop+$21,y
+	STA.w !status_prop,y
+	STA.w !status_prop+1,y
+	STA.w !status_prop+$20,y
+	STA.w !status_prop+$21,y
 	LDA.l itemboxtbl|!bank,x
-	STA !status_tile,y
+	STA.w !status_tile,y
 	CPX #$00
 	BEQ +
-	INC : STA !status_tile+1,y
-	INC : STA !status_tile+$20,y
-	INC : STA !status_tile+$21,y
+	INC : STA.w !status_tile+1,y
+	INC : STA.w !status_tile+$20,y
+	INC : STA.w !status_tile+$21,y
+	plb
 	RTL
-+	STA !status_tile+1,y
-	STA !status_tile+$20,y
-	STA !status_tile+$21,y
++	STA.w !status_tile+1,y
+	STA.w !status_tile+$20,y
+	STA.w !status_tile+$21,y
+	plb
 else
 endif
 	RTL
-
 
 itemboxtbl:
 dw !itemboxblank

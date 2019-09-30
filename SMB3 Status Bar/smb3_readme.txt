@@ -20,6 +20,8 @@ unlike the above, the hack needs to be used
 
 this patch will warn you if either of the above is not installed
 
+on v1.53 generators and special commands sprites WILL NOT work if placed at the top of the screen.
+please don't report bugs on this, just move your sprites to the bottom subscreen if needed.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;; FILE LIST ;;;;;;;
@@ -191,3 +193,6 @@ v1.51	same as above, i just want to emphasize how much more user-friendly
 v1.52	removed Lui37's Minimalist Course Clear patch, because it broke too
 	many things... level end behavior has been changed to something akin
 	to earlier versions of the patch, except without scorecard info
+v1.53	(lx5) added LM300+, latest SA-1 pack and Custom Powerups support. also
+	added 24-bit addresses support because $0BF6 is used by EXLEVEL.
+	and i believe IRQ now lasts for 3px instead of 2px.

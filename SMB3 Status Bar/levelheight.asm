@@ -134,9 +134,11 @@ org $00F806|!bank	;height of player for vert screen scroll
 %invword($0070)
 
 
+org (read3($00F70E|!bank)+15)
+	%invword($00EF)
 
-org $00F70E|!bank	;seems to be lowest layer 1 position
-%word($00C0)
+;org $00F70E|!bank	;seems to be lowest layer 1 position
+;%word($00C0)
 org $00F75F|!bank
 autoclean JSL vertlevelL1POS	;XBA : AND #$FF00
 
