@@ -297,9 +297,9 @@ warnpc $008E95|!bank
 
 
 org $008EE0|!bank	;Score hijacks
-LDA !score,x
+jsr status_bar_score_read
 org $008F0E|!bank
-LDA !score,x
+jsr status_bar_score_read
 org $008EE7|!bank
 if !score != 0
 	jsr status_bar_score_3_write
@@ -480,6 +480,10 @@ status_bar_score_3_write:
 	sta !score,x
 	rts
 
+status_bar_score_read:
+	lda !score,x
+	rts
+
 LagFixPre:
 BEQ LagFix
 JMP $827A
@@ -641,7 +645,6 @@ status_bar_time:
 	sta $0F
 
 if !time != 0
-	print pc
 	LDA $0F31|!addr
 	STA !time+$0
 	LDA $0F32|!addr
