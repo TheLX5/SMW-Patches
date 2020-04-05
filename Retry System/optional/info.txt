@@ -1,0 +1,2 @@
+Everything in this folder will be only necessary in special cases.
+The detailed explanation can be found in README.

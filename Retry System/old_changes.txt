@@ -1,0 +1,58 @@
+**********************************
+* Old Changes                    *
+**********************************
+
+(ver 2.05)
+1. You can insert different multiple midway "bars" in each sublevel(room). See "midway instruction/custom_bar.png".
+2. The prompt does not mess up your layer 3 BG, or some color math such as transparent foreground. Most HDMA effects (except windows effects, etc.) will work properly without being broken by the prompt.
+3. New options (retry_table.asm)
+- resetting RNG
+- counterbreak yoshis/powerups/coins (now you don't have to get separate patch for this)
+- midway powerup
+4. This patch saves the midway state to SRAM for non SA-1 ROMs.
+5. Compatible with new LM's secondary entrances (#0200-#1FFF)
+6. Fixed a vanilla glitch that the interaction with layer 2 objects is incorrect at the first frame when you enter a level.
+7. Fixed a glitch that the last midway bar (that should not be respawned) is respawned when you enter another level and come back to the level.
+
+* NOTE: For the sake of sustainability, this patch does no longer support Multiple Midway Point patch by Kaijyuu and LX5.
+        Also, the new "custom midway bar" feature can do everything what the MMP patch does.
+
+(ver 2.04)
+1. Provides new multiple midway options: now each midway bar in each sublevel can point different places. See "retry_table.asm" and the figures in the "midway instruction" folder.
+2. Lets you espace a level by start+select if the auto reset option is used, i.e. !default_prompt_type = $02, or $03 for the local settings.
+3. Fixed the sample loading glitch that happened when you use addmusick and the option "!default_prompt_type = $01 or $02".
+4. Fixed the no yoshi intro glitch that referred to a wrong table position.
+5. Provides more options regarding counterbreak and etc. in "retry_table.asm".
+6. Made the pipe checkpoints save the lock status($9D) for consistency.
+7. Fixed the glitch that the prompt didn't pop up when you die to a muncher while climbing and holding a directional input(thanks to The Biob for the report).
+
+
+(ver 2.03) FIRST RELEASED
+1. Now supports SA-1.
+2. Fixed the glitch that sometimes miscalculated the address of the non-vanilla midway table added by LM's hack.
+3. Some minor polishing.
+
+
+(ver 2.02)
+1. ON/OFF status is now reset properly. (Thanks NeXuS15 for reporting this)
+2. Fixed the graphical issues in the boss battles. (Thanks NeXus15)
+3. Fixed the issue that the "no retry prompt" option overlooked the "default" system of extra checkpoints.
+
+
+(ver 2.01)
+1. Handled the special cases(titlescreen, intro, yoshi wing bonus) which didn't work properly in the last version.
+   (Thanks NeXuS15)
+2. Fixed the glitch that choosing the retry option may send players to an arbitrary sublevel after getting a custom midway of MMP.
+   (Thanks turbofa)
+3. Fixed the glitch which may bring you to a random level whose initial flag of "Midway point obtained" is checked in LM.
+4. Make more things reset properly; directional coins from a question box, side exit flag, flying turn block flag, etc.
+
+
+(ver 2.00)
+1. Fixed the issue that a green yoshi(directly put on the level) didn't appear.
+2. Fixed the bonus game problem which activated the screen exit of FF on a vertical level.
+3. Now compatible with vanilla midway entrances. You may turn off the "Use separate settings for Midway Entrance" option.
+4. The status of the door/pipe checkpoints will be preserved even when you exit to the map.
+5. Added more options to the prompt(skip/sfx/lives). See "retry_table.asm".
+6. Optimized the sample loading schedule; resetting a level may be faster than the past if you're using AddmusicK.
+7. Now compatible with "Multiple Midway Point 1.6" (by Kaijyuu and LX5).

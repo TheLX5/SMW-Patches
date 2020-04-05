@@ -1,0 +1,27 @@
+Due to many demands that inserting and managing ASM stuffs should be user friendly enough to be done in minimal number of clicks,
+I partially took some of the functions from other ASM/patches that are closely related to the retry/checkpoint system, and integrated them to a single file.
+
+Here's the list of the authors and their original patches.
+
+
+1. Kaijyuu, LX5, MarioFanGamer
+- Multiple Midway Points 1.7
+- https://www.smwcentral.net/?p=section&a=details&id=17409
+  (note that it's not compatible with the retry/checkpoint system, and the checkpoint configuration interface is different)
+
+2. imamelia
+- ObjecTool 0.4
+- https://www.smwcentral.net/?p=section&a=details&id=16040
+
+3. Alcaro
+- Sprite initial facing fix
+- https://www.smwcentral.net/?p=section&a=details&id=4560
+
+4. wiiqwertyuiop
+- SRAM Expand
+  (replaced by SRAM Plus later, but this is compatible with snes classic unlike SRAM Plus?)
+- https://www.smwcentral.net/?p=section&a=details&id=4187&r=0 (warning: this standalone version has several bugs)
+
+5. Ice Man
+- HDMA v3.5
+- https://www.smwcentral.net/?p=section&a=details&id=12376
