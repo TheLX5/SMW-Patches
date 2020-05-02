@@ -132,39 +132,27 @@ Calc13BF:
 	STZ $13BF|!base2	; just making sure the translevel number is zero for titlescreen or intro level
 	RTS
 +
+	PHY
 	; copy pasted from smwdisc
-	REP #$30
 	LDX $0DD6|!base2
-	LDA $1F1F|!base2,x
-	AND #$000F
+	LDA $1F17|!base2,x
+	LSR #4
 	STA $00
-	LDA $1F21|!base2,x
-	AND #$000F
-	ASL #4
-	STA $02
-	LDA $1F1F|!base2,x
-	AND #$0010
-	ASL #4
+	LDA $1F19|!base2,x
+	AND #$F0
 	ORA $00
 	STA $00
-	LDA $1F21|!base2,x
-	AND #$0010
-	ORA $02
-	ORA $00
-	TAX
-	LDA $0DD6|!base2
-	AND #$00FF
-	LSR #2
-	TAY
-	LDA $1F11|!base2,y
-	AND #$000F
+	LDA $1F1A|!base2,x
+	ASL
+	ORA $1F18|!base2,x
+	LDX $0DB3|!base2
+	LDY $1F11|!base2,x 
 	BEQ +
-	TXA
-	CLC
-	ADC #$0400
-	TAX
-+
-	SEP #$20
+	CLC : ADC #$04
++	
+	STA $01
+	REP #$10
+	LDX $00
 	if !SA1
 		LDA $40D000,x
 	else
@@ -172,8 +160,8 @@ Calc13BF:
 	endif
 	STA $13BF|!base2
 	SEP #$10
+	PLY
 	RTS
-
 
 CalcDCNum_wrapper:
 	LDA $141A|!base2
@@ -328,6 +316,78 @@ DCgen:
 	LDA.l .item_memory,x
 	STA $08
 
+if !SA1	
+	lda $5B
+	lsr
+	bcs .oldlm_1	; vertical level
+	lda $0FF0B4|!base3
+	cmp #$33	; check if LM 3.00+
+	bcc .oldlm_1	; old LM
+	bra +
+.oldlm_1
+	jmp .oldlm
++	
+	lda $13D8|!base2
+	cmp #$10
+	rep #$20
+	bcc .8bit
+	
+	phx
+	ldx #$00
+	lda $6B
+	sec
+	sbc #$C800
+-	
+	cmp $13D7|!base2
+	bmi +
+	inx
+	sec
+	sbc $13D7|!base2
+	bra -
++	
+	sep #$20
+	xba
+	stz $2250
+	sta $2251
+	txa
+	tsb $08
+	bra +
+
+.8bit
+	lda #$0001
+	sta $2250
+	lda $6B
+	sec
+	sbc #$C800
+	lsr #4
+	sta $2251
+	lda $13D7|!base2
+	lsr #4
+	sep #$20
+	sta $2253
+	stz $2254
+	nop #3
+	lda $2306
+	tsb $08
+	lda $2308
+	lsr #4
+	stz $2250
+	sta $2251
+	stz $2252
+	phx
++	
+	lda $0BF5|!base2
+	and #$1F
+	tax
+	lda.l .max_h,x
+	sta $2253
+	stz $2254
+	plx
+	lda $08
+	clc
+	adc $2306
+	sta $08
+else	
 	LDA $5B
 	LSR
 	BCS .oldlm	; vertical level
@@ -388,6 +448,7 @@ DCgen:
 	CLC
 	ADC $4216
 	STA $08
+endif	
 	BRA +
 .oldlm
 	LDA $0A
@@ -534,6 +595,21 @@ DCget:
 	LDA $9B
 	TSB $08
 	LDA $99
+if !SA1	
+	stz $2250
+	sta $2251
+	stz $2252
+	lda $0BF5|!base2
+	and #$1F
+	tax
+	lda.l DCgen_max_h,x
+	sta $2253
+	stz $2254
+	lda $08
+	clc
+	adc $2306
+	sta $08
+else	
 	STA $4202
 	LDA $0BF5|!base2
 	AND #$1F
@@ -545,6 +621,7 @@ DCget:
 	CLC
 	ADC $4216
 	STA $08
+endif	
 
 	LDA $1933|!base2
 	BEQ ++

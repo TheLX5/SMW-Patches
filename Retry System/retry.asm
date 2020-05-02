@@ -1,5 +1,5 @@
 
-!use_custom_midway_bar = $01	; $00 = no, $01 = yes
+!use_custom_midway_bar = $00	; $00 = no, $01 = yes
 				; if you are already using objectool, set this to $00
 
 !intro_level	= $00C5		; must be $01C5 when lm's display message hack is applied (automaticallyd done btw)
@@ -345,7 +345,7 @@ Retry:
 ++
 	JSL $009C13|!bank
 	RTS
-+
++	
 	; yes is selected
 	JSR ResetLevel
 	JSL $009C13|!bank
@@ -498,7 +498,17 @@ ResetLevel:
 	PHA
 	LDA.l $05D7AE|!bank
 	STA $0F
+if !sa1	
+	lda.b #.dcsave_init_wrapper
+	sta $3180
+	lda.b #.dcsave_init_wrapper/$100
+	sta $3181
+	lda.b #.dcsave_init_wrapper/$10000
+	sta $3182
+	jsr $1E80
+else	
 	JSL .dcsave_init_wrapper
+endif	
 	PLA
 	STA $0F
 	REP #$20
