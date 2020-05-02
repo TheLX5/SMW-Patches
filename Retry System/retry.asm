@@ -49,11 +49,45 @@ if read1($0DA106) == $5C
 	!use_custom_midway_bar = $00
 endif
 
+if read1($00A28E) != $06
+	!_nmi_offset = 0
+	while read1($00A304+!_nmi_offset) != $60
+		!_nmi_offset #= !_nmi_offset+4
+	endif
+else
+	!_nmi_offset = read1($00A28E)
+endif
+
+!_alternate_nmi = 0
+!_custom_powerups = 0
+if read2($00D067|!bank) == $DEAD	; Detects Custom Powerups
+	!_alternate_nmi = 1
+	!_custom_powerups = 1
+	incsrc powerup_defs.asm
+endif
+if read3($00DFE2) == $DF1AB9		; Detects Mario 8x8 GFX DMAer
+	!_alternate_nmi = 1
+endif
+if read1($00F636) == $5C		; Detects 32x32 Player Tilemap
+	!_alternate_nmi = 1
+endif
+
+org $00A28E
+	db !_nmi_offset
+
 org $00A1DF
 autoclean JSL Prompt
 
-org $00A300
-autoclean JML LoadLetter
+if !_alternate_nmi == 0
+	org $00A300
+		autoclean JML LoadLetter
+else
+	org $00A304+!_nmi_offset
+		autoclean JML LoadLetter
+	LoadLetter_END:
+		RTS
+endif
+
 
 if read1($0085D2) == $5C	; recover
 	org $0085D2
@@ -673,7 +707,11 @@ HDMA7sprite:
 
 .update
 	; tile of the cursor
+if !_alternate_nmi == 0
 	LDA #$5A
+else	
+	lda #$0E
+endif	
 	STA $0202|!addr
 	STA $0206|!addr
 	LDA $1B91|!addr
@@ -683,7 +721,11 @@ HDMA7sprite:
 	LDA $1B92|!addr
 	ASL #2
 	TAY
+if !_alternate_nmi == 0
 	LDA #$32
+else	
+	lda #$36
+endif	
 	STA $0202|!addr,y
 +
 	; hdma window
@@ -740,10 +782,14 @@ HDMA7sprite:
 	db $68,$78,$88,$68,$78,$38,$48,$38,$48
 .pos_y
 	db $6F,$6F,$6F,$7F,$7F,$6F,$6F,$7F,$7F
-.tile
-	db $22,$21,$4A,$30,$20,$5A,$5A,$5A,$5A
 .size
 	db $02,$02,$00,$02,$02,$02,$02,$02,$02
+.tile
+if !_alternate_nmi == 1
+	db $26,$25,$38,$34,$24,$0E,$0E,$0E,$0E
+else
+	db $22,$21,$4A,$30,$20,$5A,$5A,$5A,$5A
+endif
 
 
 LoadLetter:
@@ -766,9 +812,13 @@ LoadLetter:
 	AND #$7F
 	STA !freeram+11
 .orig
+if !_alternate_nmi == 1
+	jml LoadLetter_END
+else	
 	REP #$20
 	LDX #$04
 	JML $00A304|!bank
+endif	
 .tile_update
 	PHX
 	TXA
@@ -802,7 +852,11 @@ LoadLetter:
 .src	; *20
 	dw $0000,$0060,$00E0,$00C0,$00C0
 .dest	; *10
+if !_alternate_nmi == 1
+	dw $0240,$0340,$0380,$00E0,$00F0
+else
 	dw $0200,$0300,$04A0,$05A0,$05B0
+endif
 .tile_num	; *20
 	dw $0080,$0080,$0020,$0020,$0020
 .gfx
@@ -1149,6 +1203,60 @@ GeneralInit0:		; earlier than GeneralInit
 
 
 GeneralInit:
+if !_custom_powerups == 1
+if !dynamic_items == 1
+	ldy $0DC2|!addr
+	lda.b #read1($02802D|!bank)
+	dec
+	sta $00
+	lda.b #read1($02802E|!bank)
+	sta $01
+	lda.b #read1($02802F|!bank)
+	sta $02
+	lda [$00],y
+	xba
+	rep #$20
+	and #$FF00
+	lsr #3
+	adc.w #read2($00A38B|!bank)
+	sta !item_gfx_pointer+4
+	clc
+	adc #$0200
+	sta !item_gfx_pointer+10
+	sep #$20
+	lda !item_gfx_refresh
+	ora #$13
+	sta !item_gfx_refresh
+endif
+
+	lda #$FF
+	sta !item_gfx_oldest
+	sta !item_gfx_latest
+
+	lda $86
+	sta !slippery_flag_backup
+
+.init_cloud_data
+	lda $19
+	cmp #!cloud_flower_powerup_num
+	bne +
+
+	rep #$30
+	phx
+	ldx #$006C
+-	
+	lda $94
+	sta.l !collision_data_x,x
+	lda $96
+	sta.l !collision_data_x+2,x
+	dex #4
+	bpl -
+	plx
+	sep #$30
+
++	
+endif
+	
 	; correct layer 2 interaction bit
 	LDA !freeram+11
 	AND #$01
