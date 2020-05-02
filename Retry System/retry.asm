@@ -216,7 +216,7 @@ Wait:
 	SEC
 	SBC #$10
 	STA $1426|!addr
-	JSR HDMA7sprite_recover2
+	;JSR HDMA7sprite_recover2
 	RTL
 
 
@@ -812,6 +812,11 @@ LoadLetter:
 	AND #$7F
 	STA !freeram+11
 .orig
+	lda $1426|!addr
+	cmp #$10
+	bcc .return_orig
+	jsr HDMA7sprite_recover2
+.return_orig	
 if !_alternate_nmi == 1
 	jml LoadLetter_END
 else	
