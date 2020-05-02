@@ -51,6 +51,12 @@
 
 8. (ver 2.06a) Compatible with the level ender custom sprite.
 
+9. (ver 2.06b) Compatible with Mario's 8x8 GFX DMAer, 32x32 Player Tilemap and Custom Powerups v3.4.0+.
+
+10. (ver 2.06b) Fixed several bugs regarding the implementation of Individual Dragon Coins Save on SA-1 ROMs.
+
+11. (ver 2.06b) Fixed window garbage that appeared for a frame upon closing the retry prompt.
+
 
 **********************************
 * Compatibility Management       *
