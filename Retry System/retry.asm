@@ -49,7 +49,7 @@ if read1($0DA106) == $5C
 	!use_custom_midway_bar = $00
 endif
 
-if read1($00A28E) != $06
+if read1($00A28E) == $06
 	!_nmi_offset = 0
 	while read1($00A304+!_nmi_offset) != $60
 		!_nmi_offset #= !_nmi_offset+4
