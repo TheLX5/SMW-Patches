@@ -1,4 +1,5 @@
 Contents
+ONLY USE ONE OF THE OPTIONS BELOW, DO NOT MIX THEM
 1) Built-in SRAM hack in retry system
 2) SRAM Plus
 3) BW-RAM Plus
