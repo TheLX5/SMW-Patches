@@ -1,3 +1,4 @@
+include
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; global settings                       ;
@@ -33,10 +34,10 @@
                                 ; $01 = reset the random number generator when resetting a level
 
 
-!midway_sram = $01		; $00 = no, $01 = yes (install the code that saves the midway states to SRAM)
-				; this feature does not support SA-1 ROMs, for which this option will be ignored. (you will need BWRAM Plus instead.)
-				; if you are already using SRAM Plus, this option will be ignored.
-				; * whenever you change this option and apply the patch, erase the previous srm file from your hard drive.
+!midway_sram = $01              ; $00 = no, $01 = yes (install the code that saves the midway states to SRAM)
+                                ; this feature does not support SA-1 ROMs, for which this option will be ignored. (you will need BWRAM Plus instead.)
+                                ; if you are already using SRAM Plus, this option will be ignored.
+                                ; * whenever you change this option and apply the patch, erase the previous srm file from your hard drive.
 
 
 !max_custom_midway_num = $08    ; the number of custom midway bars (custom object) allowed in one sublevel
@@ -80,13 +81,13 @@
 ;;; $04 = no retry (as if "no" is chosen automatically)
 
 .effect
-db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00	;Levels 0~F
-db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00	;Levels 10~1F
-db $00,$00,$00,$00,$00							;Levels 20~24
-db     $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00	;Levels 101~10F
-db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00	;Levels 110~11F
-db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00	;Levels 120~12F
-db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00			;Levels 130~13B
+db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;Levels 0~F
+db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;Levels 10~1F
+db $00,$00,$00,$00,$00                                              ;Levels 20~24
+db     $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;Levels 101~10F
+db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;Levels 110~11F
+db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;Levels 120~12F
+db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00                  ;Levels 130~13B
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
