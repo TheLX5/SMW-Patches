@@ -6,6 +6,7 @@
 - Make sure that at least (any) one of levels has a midway entrance with the option "Use separate settings for Midway Entrance" checked.
   (This will silently install Lunar Magic's level transition ASM to your ROM, which is required by this patch.
    Once it is certainly installed, feel free to uncheck the option in any level.)
+- Before patching, move Mario in the Overworld editor and save the Overworld in Lunar Magic: this prevents garbage graphics from appearing for a single frame when Mario walks to Yoshi's House upon starting a new save file.
 
 1. To insert: asar.exe retry.asm [your_rom].smc
 - Don't try to directly insert "retry_table.asm" or "retry_extra.asm". It won't do anything!

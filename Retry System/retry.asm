@@ -1,5 +1,5 @@
 
-!use_custom_midway_bar = $00	; $00 = no, $01 = yes
+!use_custom_midway_bar = $01	; $00 = no, $01 = yes
 				; if you are already using objectool, set this to $00
 
 !intro_level	= $00C5		; must be $01C5 when lm's display message hack is applied (automaticallyd done btw)
