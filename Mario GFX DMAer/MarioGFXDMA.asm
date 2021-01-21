@@ -97,7 +97,7 @@ freedata
 
 BEGINDMA:
 REP #$20
-LDX #$02
+LDX #$04
 LDY $0D84|!addr
 BNE +
 JMP .skipall
@@ -110,21 +110,21 @@ JMP .skipall
 LDY #$86
 STY $2121
 LDA #$2200
-STA $4310
+STA $4320
 TAY
 LDA $0D82|!addr
-STA $4312
-STY $4314
+STA $4322
+STY $4324
 LDA #$0014
-STA $4315
+STA $4325
 STX $420B
 
 LDY #$80
 STY $2115
 LDA #$1801
-STA $4310
+STA $4320
 LDY #$7E
-STY $4314
+STY $4324
 
 ;;
 ;Misc top tiles (mario, cape, yoshi, podoboo)
@@ -135,9 +135,9 @@ STA $2116
 TAY
 -
 LDA $0D85|!addr,y
-STA $4312
+STA $4322
 LDA #$0040
-STA $4315
+STA $4325
 STX $420B
 INY #2
 CPY $0D84|!addr
@@ -152,9 +152,9 @@ STA $2116
 TAY
 -
 LDA $0D8F|!addr,y
-STA $4312
+STA $4322
 LDA #$0040
-STA $4315
+STA $4325
 STX $420B
 INY #2
 CPY $0D84|!addr
@@ -171,11 +171,11 @@ BEQ .skipall
 LDA.w #!Tile<<4|$6000
 STA $2116
 LDA $0D99|!addr
-STA $4312
+STA $4322
 LDY.b #BEGINXTND>>16
-STY $4314
+STY $4324
 LDA #$0040
-STA $4315
+STA $4325
 STX $420B
 
 .skipall
@@ -184,4 +184,4 @@ JML $00A304|!bank
 
 
 BEGINXTND:
-incbin ExtendGFX.bin
+incbin "ExtendGFX.bin"
