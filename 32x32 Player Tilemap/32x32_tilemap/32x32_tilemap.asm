@@ -3,7 +3,7 @@
 ;by Ladida
 
 print ""
-print " 32x32 player tilemap patch v1.4 "
+print " 32x32 player tilemap patch v1.5 "
 print "            by Ladida            "
 print " =============================== "
 print ""
@@ -32,7 +32,7 @@ endif
 ;;;;;;;;;
 ; DO NOT EDIT THOSE BELOW!!!
 
-!PlayerGFX_size #= select(equal(readfile1("PlayerGFX.bin",$10000,$FF),readfile1("PlayerGFX.bin",$10000,$00)),select(equal(readfile1("PlayerGFX.bin",$20000,$FF),readfile1("PlayerGFX.bin",$20000,$00)),$30000,$20000),$10000)
+!PlayerGFX_size #= select(equal(readfile1("PlayerGFX.bin",$10000,$FF),readfile1("PlayerGFX.bin",$10000,$00)), select(equal(readfile1("PlayerGFX.bin",$20000,$FF),readfile1("PlayerGFX.bin",$20000,$00)),$30000,$20000),$10000)
 assert !PlayerGFX_size >= 0, "PlayerGFX.bin not found"
 assert !PlayerGFX_size <= $20000, "PlayerGFX.bin is too big, must be at most 128KiB"
 
@@ -88,8 +88,8 @@ JML skip_mario_gfx
 org $0FFC94|!bank
 JML fix_mario_palette
 
-incsrc hexedits.asm
-incsrc ow_mario.asm
+incsrc "hexedits.asm"
+incsrc "ow_mario.asm"
 
 
 ;;;;;;;;;;;;;;;;;
@@ -157,7 +157,7 @@ JMP .skipall
 +
 
 REP #$20
-LDY #$02
+LDY #$04
 
 ;;
 ;Mario's Palette
@@ -166,22 +166,22 @@ LDY #$02
 LDX #$86
 STX $2121
 LDA #$2200
-STA $4310
+STA $4320
 LDA $0D82|!addr
-STA $4312
+STA $4322
 LDX #$00
-STX $4314
+STX $4324
 LDA #$0014
-STA $4315
+STA $4325
 STY $420B
 
 
 LDX #$80
 STX $2115
 LDA #$1801
-STA $4310
+STA $4320
 LDX #$7E
-STX $4314
+STX $4324
 
 ;;
 ;Misc top tiles (cape, yoshi, podoboo)
@@ -192,9 +192,9 @@ STA $2116
 LDX #$04
 -
 LDA $0D85|!addr,x
-STA $4312
+STA $4322
 LDA #$0040
-STA $4315
+STA $4325
 STY $420B
 INX #2
 CPX $0D84|!addr
@@ -209,9 +209,9 @@ STA $2116
 LDX #$04
 -
 LDA $0D8F|!addr,x
-STA $4312
+STA $4322
 LDA #$0040
-STA $4315
+STA $4325
 STY $420B
 INX #2
 CPX $0D84|!addr
@@ -222,16 +222,16 @@ BCC -
 ;;
 
 LDX $0D87|!addr
-STX $4314
+STX $4324
 LDA $0D86|!addr : PHA
 LDX #$06
 -
 LDA.l .vramtbl,x
 STA $2116
 LDA #$0080
-STA $4315
+STA $4325
 LDA $0D85|!addr
-STA $4312
+STA $4322
 STY $420B
 INC $0D86|!addr
 INC $0D86|!addr
@@ -270,7 +270,7 @@ STY $0D87|!addr
 PLA
 JML $00F674|!bank
 
-incsrc excharactertilemap.asm
+incsrc "excharactertilemap.asm"
 
 print "Patch inserted at $",hex(FreecodeStart)," (pc: $",hex(snestopc(FreecodeStart)),"), ",freespaceuse," bytes of free space used."
 
@@ -278,7 +278,7 @@ reset freespaceuse
 
 !PlayerGFX_freespaceuse = freespaceuse
 if !PlayerGFX_size <= $10000
-	incbin PlayerGFX.bin -> PlayerGFX
+	incbin "PlayerGFX.bin" -> PlayerGFX
 else
 	org (!Freedata-$8008)|!bank
 		db $53,$54,$41,$52	;\ Asar complains when `db "STAR"` is encoutered
@@ -286,7 +286,7 @@ else
 		dw $0000	;/ when Asar only features are used
 	org !Freedata|!bank
 		PlayerGFX:
-		incbin PlayerGFX.bin -> !Freedata|!bank
+		incbin "PlayerGFX.bin" -> !Freedata|!bank
 	org (!Freedata+$20000)|!bank
 		db $53,$54,$41,$52
 		dw clamp(!PlayerGFX_size-$10009,0,$FFF7)
