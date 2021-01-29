@@ -14,7 +14,7 @@
 math pri on
 
 !sa1    = 0
-!dp = $0000
+!dp     = $0000
 !addr   = $0000
 !bank   = $800000
 !bank8  = $80
@@ -23,7 +23,7 @@ math pri on
 if read1($00FFD5) == $23
     sa1rom
     !sa1    = 1
-    !dp = $3000
+    !dp     = $3000
     !addr   = $6000
     !bank   = $000000
     !bank8  = $00
