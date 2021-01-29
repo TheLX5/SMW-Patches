@@ -69,6 +69,10 @@ Also the check for LM's hijacks was updated to be done at compile time with Asar
 
 15. (ver 2.06c) Added compatibility with SA-1 pack v1.35+, by remapping the windowing channel automatically from 7 to 1. (KevinM)
 
+16. (ver 2.06c) Fixed an issue with the retry prompt with SA-1 pack v1.40+, due to a routine previously used by retry that's hijacked by SA-1.
+
+17. (ver 2.06c) Added !prompt_letters_palette and !prompt_cursor_palette defines in retry_table.asm to easily change the palette used by the retry prompt.
+
 **********************************
 * Compatibility Management       *
 **********************************

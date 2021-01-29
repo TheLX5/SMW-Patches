@@ -69,6 +69,11 @@
 
 !addmusick_ram_addr = $7FB000   ; don't need to change this in most case
 
+;;; Palettes used by the retry prompt tiles.
+;;; Note that they use sprite tiles, so they must use palettes $08-$0F.
+;;; Color 2 in the palette should be black, since it's used as the background color for the tiles.
+!prompt_letters_palette = $08
+!prompt_cursor_palette  = $08
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; local settings (for each translevel)  ;

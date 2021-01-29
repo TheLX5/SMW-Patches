@@ -45,13 +45,6 @@ endif
 ; It will be 7 on lorom or with SA-1 <1.35, and 1 with SA-1 >=1.35.
 !WindowChannel = log2(read1($0092A1))
 
-; Check if using SA-1 v1.40+, which means MaxTile is used.
-if !sa1 && read3($0084C0) == $5A123 && read1($0084C3) >= 140
-    !MaxTile = 1
-else
-    !MaxTile = 0
-endif
-
 if read1($05DAA3) == $5C    ; endif is at EOF
     print "Error: This patch is not compatible with the Multiple Midway Points patch any more. Insertion aborted. See the first note in README."
 else
@@ -662,6 +655,13 @@ endif
 incsrc "retry_extra.asm"
 
 
+; Convert palettes from row number to YXPPCCCT format
+assert !prompt_letters_palette >= $08 && !prompt_letters_palette <= $0F, "Error: \!prompt_letters_palette should be between $08 and $0F."
+assert !prompt_cursor_palette >= $08 && !prompt_cursor_palette <= $0F, "Error: \!prompt_cursor_palette should be between $08 and $0F."
+
+!prompt_letters_palette #= ((!prompt_letters_palette-8)<<1)
+!prompt_cursor_palette  #= ((!prompt_cursor_palette-8)<<1)
+
 HDMA7sprite:
 .set
     ; init cursor counter
@@ -675,7 +675,7 @@ HDMA7sprite:
     STA $0209|!addr,y
     LDA.l .tile,x
     STA $020A|!addr,y
-    LDA #$30
+    LDA.b #$30|!prompt_letters_palette
     STA $020B|!addr,y
     INY
     INY
@@ -690,43 +690,28 @@ HDMA7sprite:
     STA $0201|!addr
     LDA #$7F
     STA $0205|!addr
-    LDA #$30
+    LDA #$30|!prompt_cursor_palette
     STA $0203|!addr
     STA $0207|!addr
 
-    ; OAM tile sizes
-    LDA #$02
-    STA $0420|!addr ; cursor1
-    STA $0421|!addr ; cursor2
-    STA $0422|!addr ; blank
-    STA $0423|!addr ; blank
-    STA $0424|!addr ; blank
-    STA $0425|!addr ; blank
-    STA $0426|!addr ; IT
-    STA $0427|!addr ; EX
-    STZ $0428|!addr ; Y
-    STA $0429|!addr ; TR
-    STA $042A|!addr ; RE
-
-    PHB
-    LDA.b #$00|!bank8
-    PHA
-    PLB
-
-    PHK
-    PEA .pos-1
-    PEA $9BAE
-    JML $008494|!bank   ; apply the modification of $0420-$042A
-.pos
-    PLB
+    ; OAM tile sizes.
+    ; Write directly to $0400, so we don't need to call the routine at $008494.
+    ; This also fixes an issue on SA-1 v1.40, since it hijacks that routine for MaxTile.
+    lda #%10101010  ; 16x16 for all tiles
+    sta $0400|!addr ; cursor1 / cursor2 / blank / blank
+    sta $0401|!addr ; blank / blank / IT / EX
+    lda $0402|!addr ;\
+    and #%11000000  ;| Y / TR / RE
+    ora #%00101010  ;|
+    sta $0402|!addr ;/
 
 .update
     ; tile of the cursor
 if !_alternate_nmi == 0
     LDA #$5A
-else    
+else
     lda #$0E
-endif   
+endif
     STA $0202|!addr
     STA $0206|!addr
     LDA $1B91|!addr
@@ -738,9 +723,9 @@ endif
     TAY
 if !_alternate_nmi == 0
     LDA #$32
-else    
+else
     lda #$36
-endif   
+endif
     STA $0202|!addr,y
 +
     ; hdma window
@@ -805,7 +790,6 @@ if !_alternate_nmi == 1
 else
     db $22,$21,$4A,$30,$20,$5A,$5A,$5A,$5A
 endif
-
 
 LoadLetter:
     LDA !freeram+11
@@ -1933,14 +1917,14 @@ endif
 
 ; handling compatibility (sprite init facing fix)
 if read1($05D971) == $22
-    print "Warning: You inserted an old version of the Sprite Initial Facing patch."
-    print "The setting in retry_table.asm will be ignored, but it's recommended you patch the newest version."
+    print "Warning: You already inserted an old version of the Sprite Initial Facing patch."
+    print "The setting in retry_table.asm will be ignored, but it's recommended you patch the newest version: https://www.smwcentral.net/?p=section&a=details&id=19082."
 elseif read1($05D984) == $22
-    print "Warning: You inserted the Sprite Initial Facing patch."
+    print "Warning: You already inserted the Sprite Initial Facing patch."
     print "The setting in retry_table.asm will be ignored."
 else
     if read1($05D971) == $5C
-        print "Warning: old Retry's Sprite Initial Facing hijack detected."
+        print "Warning: old Retry's Sprite Initial Facing fix hijack detected."
         print "The old one will be removed and replaced with the newest version."
 
         autoclean read3($05D971+1)
