@@ -13,20 +13,20 @@
 
 math pri on
 
-!sa1	= 0
-!dp	= $0000
-!addr	= $0000
-!bank	= $800000
-!bank8	= $80
+!sa1    = 0
+!dp = $0000
+!addr   = $0000
+!bank   = $800000
+!bank8  = $80
 !7ED000 = $7ED000           ; $7ED000 if LoROM, $40D000 if SA-1 ROM.
 
 if read1($00FFD5) == $23
     sa1rom
-    !sa1	= 1
-    !dp	= $3000
-    !addr	= $6000
-    !bank	= $000000
-    !bank8	= $00
+    !sa1    = 1
+    !dp = $3000
+    !addr   = $6000
+    !bank   = $000000
+    !bank8  = $00
     !7ED000 = $40D000       ; $7ED000 if LoROM, $40D000 if SA-1 ROM.
 endif
 
@@ -104,7 +104,7 @@ else
 endif
 
 
-if read1($0085D2) == $5C	; recover
+if read1($0085D2) == $5C    ; recover
     org $0085D2
     db $A4,$12,$B9,$D0
 endif
@@ -166,20 +166,20 @@ BRA +
 NOP #3;the levelnum patch goes here in many ROMs, just skip over it
 +
 REP #$30
-    LDA $0E		
+    LDA $0E     
     STA $010B|!addr
-    ASL		
-    CLC		
-    ADC $0E		
-    TAY		
+    ASL     
+    CLC     
+    ADC $0E     
+    TAY     
     LDA.w $E000,Y
-    STA $65		
+    STA $65     
     LDA.w $E001,Y
-    STA $66		
+    STA $66     
     LDA.w $E600,Y
-    STA $68		
+    STA $68     
     LDA.w $E601,Y
-    STA $69		
+    STA $69     
     BRA +
 ORG $05D8E0
     +
@@ -387,14 +387,14 @@ Retry:
     LDA #$FF
     STA $0DDA|!addr
 .van
-    LDA #$4E	; extra frames
+    LDA #$4E    ; extra frames
     STA $1496|!addr
     LDA.l $00F60B|!bank
     STA $1DFB|!addr
 ++
     JSL $009C13|!bank
     RTS
-+	
++   
     ; yes is selected
     JSR ResetLevel
     JSL $009C13|!bank
@@ -453,7 +453,7 @@ Retry:
 ++
     RTS
 
-.cursor_sub	; smw code at $009E82
+.cursor_sub ; smw code at $009E82
     LDA.l $009E6A
     STA $8A
     RTS
@@ -462,7 +462,7 @@ Retry:
 ResetLevel:
     ; 1) set screen exit
     LDA $0FF0B4
-    CMP #$33	; check if LM 3.00+
+    CMP #$33    ; check if LM 3.00+
     BCC .oldlm
     PHX
     JSL $03BCDC|!bank
@@ -509,7 +509,7 @@ ResetLevel:
     STZ $19F8|!addr,x
     STZ $1A78|!addr,x
     STZ $1AF8|!addr,x
-    STZ $1938|!addr,x	; sprite reload
+    STZ $1938|!addr,x   ; sprite reload
     DEX
     BPL -
 
@@ -547,7 +547,7 @@ ResetLevel:
     PHA
     LDA.l $05D7AE|!bank
     STA $0F
-if !sa1	
+if !sa1 
     lda.b #.dcsave_init_wrapper
     sta $3180
     lda.b #.dcsave_init_wrapper/$100
@@ -555,9 +555,9 @@ if !sa1
     lda.b #.dcsave_init_wrapper/$10000
     sta $3182
     jsr $1E80
-else	
+else    
     JSL .dcsave_init_wrapper
-endif	
+endif   
     PLA
     STA $0F
     REP #$20
@@ -571,13 +571,13 @@ endif
     STZ $1497|!addr,x
     DEX
     BPL -
-    STZ $1432|!addr	; directional coin from a question box
-    STZ $14AF|!addr	; ON/OFF
-    STZ $1B94|!addr	; bonus game sprite
-    STZ $1B95|!addr	; yoshi wing
-    STZ $1B96|!addr	; side exit
-    STZ $1B9A|!addr	; flying turn blocks(forest of illusion)
-    STZ $1B9F|!addr	; reznor bridge
+    STZ $1432|!addr ; directional coin from a question box
+    STZ $14AF|!addr ; ON/OFF
+    STZ $1B94|!addr ; bonus game sprite
+    STZ $1B95|!addr ; yoshi wing
+    STZ $1B96|!addr ; side exit
+    STZ $1B9A|!addr ; flying turn blocks(forest of illusion)
+    STZ $1B9F|!addr ; reznor bridge
     ; mode 7 values for the boss
     ; do it later
     ;REP #$20
@@ -602,15 +602,15 @@ endif
     BEQ .amk
 
     ; non addmusic (dont need to consider sample overhead)
-    LDA $0DDA|!addr	; after the death jingle, this value will always be $FF
+    LDA $0DDA|!addr ; after the death jingle, this value will always be $FF
     BPL .musicend
-    STZ $0DDA|!addr	; request to reset after death jingle, p-switch, march song, etc
+    STZ $0DDA|!addr ; request to reset after death jingle, p-switch, march song, etc
     BRA .musicend
 .amk
         LDA $13C6|!addr ; music has been changed by level ender (which doesn't update $0DDA properly) 
         BNE .forcereset
     LDA $0DDA|!addr
-    CMP #$FF	; death, kaizo trap, etc
+    CMP #$FF    ; death, kaizo trap, etc
     BEQ .spec
     ; normal case: $0DDA preserved
     LDA !freeram+6
@@ -619,14 +619,14 @@ endif
     BRA .bypass
 .spec
     LDA $1DFB|!addr
-    CMP #$01	; death
+    CMP #$01    ; death
     BEQ +
 .forcereset
     ; kaizo trap -> order reload
     LDA #$00
     STA !addmusick_ram_addr
     STA $1DFB|!addr
-    BRA .musicend	; maybe improve this later, but not major
+    BRA .musicend   ; maybe improve this later, but not major
 +
     ; death jingle
     LDA !freeram+6
@@ -634,7 +634,7 @@ endif
     BNE .musicend
 .bypass
     LDA !freeram+6
-    CMP #$FF	; always reload the sample (actually this wont be reached for the most cases)
+    CMP #$FF    ; always reload the sample (actually this wont be reached for the most cases)
     BEQ .musicend
     JSR GetPromptType
     CMP #$02
@@ -724,9 +724,9 @@ HDMA7sprite:
     ; tile of the cursor
 if !_alternate_nmi == 0
     LDA #$5A
-else	
+else    
     lda #$0E
-endif	
+endif   
     STA $0202|!addr
     STA $0206|!addr
     LDA $1B91|!addr
@@ -738,13 +738,13 @@ endif
     TAY
 if !_alternate_nmi == 0
     LDA #$32
-else	
+else    
     lda #$36
-endif	
+endif   
     STA $0202|!addr,y
 +
     ; hdma window
-    LDA $1B91|!addr	; handle the delay
+    LDA $1B91|!addr ; handle the delay
     BEQ .ret
     REP #$20
     LDA #$2604
@@ -831,14 +831,14 @@ LoadLetter:
     cmp #$10
     bcc .return_orig
     jsr HDMA7sprite_recover2
-.return_orig	
+.return_orig    
 if !_alternate_nmi == 1
     jml LoadLetter_END
-else	
+else    
     REP #$20
     LDX #$04
     JML $00A304|!bank
-endif	
+endif   
 .tile_update
     PHX
     TXA
@@ -869,15 +869,15 @@ endif
     SEP #$20
     PLX
     RTS
-.src	; *20
+.src    ; *20
     dw $0000,$0060,$00E0,$00C0,$00C0
-.dest	; *10
+.dest   ; *10
 if !_alternate_nmi == 1
     dw $0240,$0340,$0380,$00E0,$00F0
 else
     dw $0200,$0300,$04A0,$05A0,$05B0
 endif
-.tile_num	; *20
+.tile_num   ; *20
     dw $0080,$0080,$0020,$0020,$0020
 .gfx
     incbin letters.bin
@@ -964,7 +964,7 @@ DeathSFX:
     LDA $71
     CMP #$09
     BNE +
-    JML $00F628|!bank	;RTL
+    JML $00F628|!bank   ;RTL
 +
     LDA #$90
     STA $7D
@@ -994,7 +994,7 @@ DeathSFX:
 .orig
     LDA $0DDA|!addr
     STA !freeram+10
-    LDA.l $00F60B|!bank	; death jingle
+    LDA.l $00F60B|!bank ; death jingle
     STA $1DFB|!addr
     JML $00F60F|!bank
 
@@ -1103,9 +1103,9 @@ GetPromptType:
     RTS
 +
     LDX $13BF|!addr
-;	BNE +
-;	LDA #$04
-;	RTS
+;   BNE +
+;   LDA #$04
+;   RTS
 ;+
     LDA.l Table_effect,x
     CMP #$01
@@ -1260,7 +1260,7 @@ endif
     rep #$30
     phx
     ldx #$006C
--	
+-   
     lda $94
     sta.l !collision_data_x,x
     lda $96
@@ -1270,7 +1270,7 @@ endif
     plx
     sep #$30
 
-+	
++   
 endif
     
     ; correct layer 2 interaction bit
@@ -1312,14 +1312,14 @@ endif
     ; (initial entrance from ow or after death or transition midpt)
 
     STZ $1493|!addr ; for the "level ender" custom sprite which is often used in boss battles
-    STZ $13C6|!addr	; for the "level ender" custom sprite which is often used in boss battles
+    STZ $13C6|!addr ; for the "level ender" custom sprite which is often used in boss battles
 
     ; 1) reset mode 7 values for the boss (consistency)
     REP #$20
     STZ $36
-;	STZ $38
-;	STZ $3A
-;	STZ $3C
+;   STZ $38
+;   STZ $3A
+;   STZ $3C
     SEP #$20
     ; recover the freeze state when you enter the level through a pipe
     LDA $71
@@ -1354,7 +1354,7 @@ endif
 
     ; common (orig)
     LDA #$00
-    STA !freeram+5	; this flag is completely used -> reset
+    STA !freeram+5  ; this flag is completely used -> reset
     LDA $141A|!addr
     BNE +
     JML $0091AB|!bank
@@ -1539,7 +1539,7 @@ MidbarHijack:
     TAX
 
     LDA $0FF0B4
-    CMP #$33	; check if LM 3.00+
+    CMP #$33    ; check if LM 3.00+
     BCC .oldlm
     REP #$20
     LDA $13D7|!addr
@@ -1597,10 +1597,10 @@ MidbarHijack:
 
 
 ; input:
-;	x: a, 8bit, unsigned
-;	$04: b, 16bit, unsigned
+;   x: a, 8bit, unsigned
+;   $04: b, 16bit, unsigned
 ; output:
-;	$04: a*b, 16bit (least significant), unsigned
+;   $04: a*b, 16bit (least significant), unsigned
 .multiply
     LDA $00 : PHA
     LDA $02 : PHA
@@ -1612,7 +1612,7 @@ if !sa1 == 0
     STX $4202
     LDA $04
     STA $4203
-    NOP #4		; waste 8 cycles for multiplication
+    NOP #4      ; waste 8 cycles for multiplication
     REP #$20
     LDA $4216
     STA $00
@@ -1621,7 +1621,7 @@ if !sa1 == 0
     STX $4202
     LDA $05
     STA $4203
-    NOP #4		; waste 8 cycles for multiplication
+    NOP #4      ; waste 8 cycles for multiplication
     REP #$20
     LDA $4216
     CLC
@@ -1667,7 +1667,7 @@ endif
 MidbarSpawn:
     LDA $0109|!addr
     BEQ +
-    CMP.b #!intro_level+$24	; intro
+    CMP.b #!intro_level+$24 ; intro
     BNE .true                   ; filters titlescreen, etc
 +
     LDA $1EA2|!addr,x
@@ -1722,16 +1722,16 @@ MidbarSpawn:
 CheckMidwayEntrance:
     LDA $1EA2|!addr,x
     AND #$40
-    STA $13CF|!addr	; for no yoshi intro
-    BEQ .normal	; also if no checkpoint is obtained, midway entrances can never be the case (vanilla)
+    STA $13CF|!addr ; for no yoshi intro
+    BEQ .normal ; also if no checkpoint is obtained, midway entrances can never be the case (vanilla)
     PHX
     TXA
     ASL
     TAX
     LDA.l !freeram_checkpoint+1,x
-    PLX		; fixed the bug after v2.03
+    PLX     ; fixed the bug after v2.03
     AND #$0A
-    CMP #$08		; check the midway exit bit
+    CMP #$08        ; check the midway exit bit
     BEQ +
 .normal
     ; normal target
@@ -1740,7 +1740,7 @@ CheckMidwayEntrance:
     ; midway target
     LDA $1EA2|!addr,x
     AND #$40
-    JML $05D9DE|!bank	; go to the routine called "secondary_exits"
+    JML $05D9DE|!bank   ; go to the routine called "secondary_exits"
 
 
 
@@ -1777,16 +1777,16 @@ InitCheckpointRam:
 
 
 VanillaMidwayDestFix:
-    LDA $141A|!addr		; first entrance -> vanilla ok
+    LDA $141A|!addr     ; first entrance -> vanilla ok
     BEQ .orig2
-    LDA.l $05D9E3|!bank		; check if lm hack is applied
+    LDA.l $05D9E3|!bank     ; check if lm hack is applied
     CMP #$22
     BNE .orig2
-    LDA.l !freeram+5	; only for respawning (when !freeram+3 is the target dest) ; todo? -> no (because doors in wing levels work differently)
+    LDA.l !freeram+5    ; only for respawning (when !freeram+3 is the target dest) ; todo? -> no (because doors in wing levels work differently)
     BEQ .orig2
     LDA.l !freeram+4
     AND #$0A
-    CMP #$08		; check the midway exit bit
+    CMP #$08        ; check the midway exit bit
     BEQ .cnt
 .orig2
     JMP .orig
@@ -1820,16 +1820,16 @@ VanillaMidwayDestFix:
     ; set the screen number of midway entrance
     LDA [$03],y
     AND #$10
-    STA $01		; 5th bit
+    STA $01     ; 5th bit
 
     LDA $F400,y
     LSR #4
     ORA $01
-    STA $01		; 1-4th bit (0-F)
+    STA $01     ; 1-4th bit (0-F)
 
     LDA [$03],y
     BIT #$20
-    BNE .ret	; separate midway -> already set correctly
+    BNE .ret    ; separate midway -> already set correctly
 
     ; correct the slippery/water for vanilla midway
     LDA #$C0
@@ -2003,7 +2003,7 @@ else
         ++
             LDA $95
         endif
-        STA $D2		;new
+        STA $D2     ;new
     +
         JML $05DA17|!bank
 
@@ -2021,7 +2021,7 @@ else
             BEQ +
         ++
         endif
-        STA $D4		;new
+        STA $D4     ;new
     +
         LDA $97
         JML $05DA07|!bank
@@ -2033,28 +2033,28 @@ org $05D842
     autoclean JML mmp_main
 
 ORG $05D9DE
-    autoclean JML secondary_exits	; additional code for secondary exits
+    autoclean JML secondary_exits   ; additional code for secondary exits
 
 org $048F74
-    autoclean JML reset_midpoint	; hijack the code that resets the midway point
+    autoclean JML reset_midpoint    ; hijack the code that resets the midway point
 
 org $05DAA3
-    autoclean JSL no_yoshi		; make secondary exits compatible with no yoshi intros
+    autoclean JSL no_yoshi      ; make secondary exits compatible with no yoshi intros
 
 freecode
 
 mmp_main:
-    LDA $141A|!addr		; skip if not the opening level
+    LDA $141A|!addr     ; skip if not the opening level
     BNE .return
-    LDA $1B93|!addr		; prevent infinite loop if using a secondary exit
+    LDA $1B93|!addr     ; prevent infinite loop if using a secondary exit
     BNE .return
     LDA $0109|!addr
     BEQ +
     CMP.b #!intro_level+$24
-    BNE .code_05D8A2	; filters titlescreen, etc
+    BNE .code_05D8A2    ; filters titlescreen, etc
     
     ; assumption = level 0 <=> intro
-    LDA $1EA2|!addr		; check the midway flag
+    LDA $1EA2|!addr     ; check the midway flag
     AND #$40
     BNE ++
     LDA.b #!intro_level+$24
@@ -2074,41 +2074,41 @@ mmp_main:
     TAX
     LDA $1EA2|!addr,y
     AND #$40
-    BEQ .return		; check if any midway is activated previously
+    BEQ .return     ; check if any midway is activated previously
 ++
     LDA.l !freeram_checkpoint+1,x
-    AND #$02		; check the 2ndary exit bit
+    AND #$02        ; check the 2ndary exit bit
     BNE .secondary_exit
     REP #$20
     LDA.l !freeram_checkpoint,x
     AND #$01FF
-    STA $0E			; store level number
-    JML $05D8B7|!bank		; no need to restore the processr mode
+    STA $0E         ; store level number
+    JML $05D8B7|!bank       ; no need to restore the processr mode
 .return
     JML $05D847|!bank
 .code_05D8A2
     JML $05D8A2|!bank
 .secondary_exit
     LDA.l !freeram_checkpoint,x
-    STA $19B8|!addr		; store secondary exit number (low)
+    STA $19B8|!addr     ; store secondary exit number (low)
     LDA.l !freeram_checkpoint+1,x
     ORA #$04
-    STA $19D8|!addr		; store secondary exit number (high and properties)
-    STZ $95			; set these to 0
+    STA $19D8|!addr     ; store secondary exit number (high and properties)
+    STZ $95         ; set these to 0
     STZ $97
-    JML $05D7B3|!bank		; return and load level at a secondary exit position
+    JML $05D7B3|!bank       ; return and load level at a secondary exit position
 
 secondary_exits:
-    LDX $1B93|!addr		; check if using a secondary exit for this
-    BNE .return		; if so, skip the code that sets mario's x position to the midway entrance
-    STA $13CF|!addr		; restore old code
-    LDA $02			; restore old code
-    JML $05D9E3|!bank		; return
-.return	
-    JML $05D9EC|!bank		; return without setting mario's x to the midway entrance
+    LDX $1B93|!addr     ; check if using a secondary exit for this
+    BNE .return     ; if so, skip the code that sets mario's x position to the midway entrance
+    STA $13CF|!addr     ; restore old code
+    LDA $02         ; restore old code
+    JML $05D9E3|!bank       ; return
+.return 
+    JML $05D9EC|!bank       ; return without setting mario's x to the midway entrance
 
 reset_midpoint:
-    STA $1EA2|!addr,x		; restore old code
+    STA $1EA2|!addr,x       ; restore old code
     INC $13D9|!addr
     TXA
     ASL
@@ -2120,33 +2120,33 @@ reset_midpoint:
     ADC #$00DC
 +
     STA !freeram_checkpoint,x
-    JML $048F7A|!bank		; return
+    JML $048F7A|!bank       ; return
 
 no_yoshi:
-    STZ $1B93|!addr		; reset this (prevents glitch with no yoshi intros and secondary entrances)
-    LDA $05D78A|!bank,x		; restore old code
+    STZ $1B93|!addr     ; reset this (prevents glitch with no yoshi intros and secondary entrances)
+    LDA $05D78A|!bank,x     ; restore old code
     RTL
 
 get_translevel:
-    LDY $0DD6|!addr		;get current player*4
-    LDA $1F17|!addr,y		;ow player X position low
+    LDY $0DD6|!addr     ;get current player*4
+    LDA $1F17|!addr,y       ;ow player X position low
     LSR #4
     STA $00
-    LDA $1F19|!addr,y		;ow player y position low
+    LDA $1F19|!addr,y       ;ow player y position low
     AND #$F0
     ORA $00
     STA $00
-    LDA $1F1A|!addr,y		;ow player y position high
+    LDA $1F1A|!addr,y       ;ow player y position high
     ASL
-    ORA $1F18|!addr,y		;ow player x position high
-    LDY $0DB3|!addr		;get current player
-    LDX $1F11|!addr,y		;get current map
+    ORA $1F18|!addr,y       ;ow player x position high
+    LDY $0DB3|!addr     ;get current player
+    LDX $1F11|!addr,y       ;get current map
     BEQ +
-    CLC : ADC #$04		;if on submap, add $0400
-+	STA $01
+    CLC : ADC #$04      ;if on submap, add $0400
++   STA $01
     REP #$10
     LDX $00
-    LDA !7ED000,x		;load layer 1 tilemap, and thus current translevel number
+    LDA !7ED000,x       ;load layer 1 tilemap, and thus current translevel number
     STA $13BF|!addr
     SEP #$10
     RTS
@@ -2154,48 +2154,48 @@ get_translevel:
 
 if !use_custom_midway_bar
     ; copy pasted from objectool (object 2D) by imamelia
-    org $0DA415		; x6A615 (hijack normal object loading routine)
-        autoclean  JML NewNormObjects	; E2 30 AD 31 19
-        NOP			;
+    org $0DA415     ; x6A615 (hijack normal object loading routine)
+        autoclean  JML NewNormObjects   ; E2 30 AD 31 19
+        NOP         ;
 
     freecode
-    NewNormObjects:	;
-        SEP #$30		;
-        LDA $5A		; check the object number
-        CMP #$2D	; if it is equal to 2D...
-        BEQ CustNormObjRt	; then it is a custom normal object
+    NewNormObjects: ;
+        SEP #$30        ;
+        LDA $5A     ; check the object number
+        CMP #$2D    ; if it is equal to 2D...
+        BEQ CustNormObjRt   ; then it is a custom normal object
 
-    NotCustomN:	;
-        LDA $1931|!addr	; hijacked code
-        JML $0DA41A|!bank	;
+    NotCustomN: ;
+        LDA $1931|!addr ; hijacked code
+        JML $0DA41A|!bank   ;
 
-    CustNormObjRt:	;
+    CustNormObjRt:  ;
         LDA $00
         PHA
-        LDY #$00		; start Y at 00
-        LDA [$65],y	; this should point to the next byte
-        STA $5A		; the first new settings byte is the new object number
-        INY		; increment Y to get to the next byte
-        LDA [$65],y	;
-        STA $00		; the second new settings byte
-        INY		; increment Y again...
-        TYA		;
-        CLC		;
-        ADC $65		; add 2 to $65 so that the pointer is in the right place,
-        STA $65		; since this is a 5-byte object (and SMW's code expects them to be 3 bytes)
-        LDA $66		; if the last byte overflowed...
-        ADC #$00	; add 1 to it
-        STA $66		;
+        LDY #$00        ; start Y at 00
+        LDA [$65],y ; this should point to the next byte
+        STA $5A     ; the first new settings byte is the new object number
+        INY     ; increment Y to get to the next byte
+        LDA [$65],y ;
+        STA $00     ; the second new settings byte
+        INY     ; increment Y again...
+        TYA     ;
+        CLC     ;
+        ADC $65     ; add 2 to $65 so that the pointer is in the right place,
+        STA $65     ; since this is a 5-byte object (and SMW's code expects them to be 3 bytes)
+        LDA $66     ; if the last byte overflowed...
+        ADC #$00    ; add 1 to it
+        STA $66     ;
 
-        PHB		;
-        PHK		;
-        PLB		; change the data bank
-        JSR Object2DRt	; execute codes for custom normal objects
-        PLB		;
-    ReturnCustomN:	;
+        PHB     ;
+        PHK     ;
+        PLB     ; change the data bank
+        JSR Object2DRt  ; execute codes for custom normal objects
+        PLB     ;
+    ReturnCustomN:  ;
         PLA
         STA $00
-        JML $0DA53C|!bank	; jump to an RTS in bank 0D
+        JML $0DA53C|!bank   ; jump to an RTS in bank 0D
 
     Object2DRt:
         ; convert the value to the corresponding entrance
@@ -2210,11 +2210,11 @@ if !use_custom_midway_bar
         CMP #$20
         BCS +
         AND #$01
-        ORA #$02	; secondary
+        ORA #$02    ; secondary
         BRA ++
     +
         AND #$01
-        ORA #$0A	; secondary + water
+        ORA #$0A    ; secondary + water
     ++
         STA $01
         LDA $5A
@@ -2228,11 +2228,11 @@ if !use_custom_midway_bar
         BRA .conv_end
     .mident
         AND #$01
-        ORA #$08	; midway
+        ORA #$08    ; midway
         STA $01
     .conv_end
         LDA !freeram_custobjnum
-        CMP #!max_custom_midway_num	; custom midways more than allowed wont be generated
+        CMP #!max_custom_midway_num ; custom midways more than allowed wont be generated
         BCS .end
         INC
         STA !freeram_custobjnum
@@ -2246,9 +2246,9 @@ if !use_custom_midway_bar
         ADC $6B
         SEC
         SBC #$C800
-        STA.l !freeram_custobjdata,x	; pos (index to $7EC800)
+        STA.l !freeram_custobjdata,x    ; pos (index to $7EC800)
         LDA $00
-        STA.l !freeram_custobjdata+(!max_custom_midway_num*2),x	; entrance info
+        STA.l !freeram_custobjdata+(!max_custom_midway_num*2),x ; entrance info
         SEP #$20
 
         ; spawn check
@@ -2268,7 +2268,7 @@ if !use_custom_midway_bar
         ; spawn the left tile
         LDA $57
         AND #$0F
-        BEQ .end	; skip if it's on the screen border to prevent underflow
+        BEQ .end    ; skip if it's on the screen border to prevent underflow
         DEY
         LDA #$35
         STA [$6B],y
@@ -2422,7 +2422,7 @@ else
             endmacro
 
             org $00FFD8
-                db !SRAMSize	
+                db !SRAMSize    
 
             org $009BC9
                 autoclean JML SaveGame
@@ -2436,88 +2436,88 @@ else
                 autoclean JML EraseGame
 
             freecode
-            SAVETable:					;Amount of bytes to save : Address to save : SRAM address to save to
+            SAVETable:                  ;Amount of bytes to save : Address to save : SRAM address to save to
                 dw $00C0 : dl !freeram_checkpoint : dl $700400
-                dw $0000	; End
+                dw $0000    ; End
             INC:
-                dw $0000 : dw $0400 : dw $0800		;Amount of bytes to increase by when using a different file (1-3)
+                dw $0000 : dw $0400 : dw $0800      ;Amount of bytes to increase by when using a different file (1-3)
             BINC:
-                db $00 : db $00 : db $00			;Amount of bytes to increase by when using a different file (1-3)
+                db $00 : db $00 : db $00            ;Amount of bytes to increase by when using a different file (1-3)
 
             macro GetReady()
-                LDA SAVETable+2,x	;\ Get RAM address
-                STA $00			;/
-                LDA SAVETable+5,x	;\
-                CLC			; | Get SRAM address
-                ADC $0B			; |
-                STA $03			;/
-                SEP #$20		;
-                LDA SAVETable+4,x	;\ Get bank byte for RAM
-                STA $02			;/
-                LDA SAVETable+7,x	;\
-                CLC			; | Get the bank byte for SRAM
-                ADC $0D			; |
-                STA $05			;/
-                REP #$20		;
-                LDY #$0000		; Y = #$0000
+                LDA SAVETable+2,x   ;\ Get RAM address
+                STA $00         ;/
+                LDA SAVETable+5,x   ;\
+                CLC         ; | Get SRAM address
+                ADC $0B         ; |
+                STA $03         ;/
+                SEP #$20        ;
+                LDA SAVETable+4,x   ;\ Get bank byte for RAM
+                STA $02         ;/
+                LDA SAVETable+7,x   ;\
+                CLC         ; | Get the bank byte for SRAM
+                ADC $0D         ; |
+                STA $05         ;/
+                REP #$20        ;
+                LDY #$0000      ; Y = #$0000
             endmacro
 
             SaveGame:
-                PHK			;\ Set DBR
-                PLB			;/
-                LDY $010A		; Get game file 
-                LDA BINC,y		;\ Get bank byte to increase by
-                STA $0D			;/
-                TYA			;\
-                ASL A			; | Y*2
-                TAY			;/
-                REP #$30		; A, X, Y = 16-bit
-                LDA INC,y		;\ Read low and high byte to increase by
-                STA $0B			;/
-                LDX #$0000		; X = #$0000
+                PHK         ;\ Set DBR
+                PLB         ;/
+                LDY $010A       ; Get game file 
+                LDA BINC,y      ;\ Get bank byte to increase by
+                STA $0D         ;/
+                TYA         ;\
+                ASL A           ; | Y*2
+                TAY         ;/
+                REP #$30        ; A, X, Y = 16-bit
+                LDA INC,y       ;\ Read low and high byte to increase by
+                STA $0B         ;/
+                LDX #$0000      ; X = #$0000
             .setup
-                LDA SAVETable,x		;\ Get amount of bytes to write
-                BEQ .end		;/
-                STA $0E			; Store to scratch RAM
+                LDA SAVETable,x     ;\ Get amount of bytes to write
+                BEQ .end        ;/
+                STA $0E         ; Store to scratch RAM
             %GetReady()
             .loop
-                SEP #$20		;
-                LDA [$00],y		; Load RAM
-                STA [$03],y		; Store to SRAM
-                REP #$20		;
-                INY			; Y+1
-                DEC $0E			; Check if we wrote to all SRAM
-                BNE .loop		; Back if we haven't
-                TXA			; X->A
-                CLC			;\
-                ADC #$0008		;/
-                TAX			; A->X
-                BRA .setup		; Back we go
+                SEP #$20        ;
+                LDA [$00],y     ; Load RAM
+                STA [$03],y     ; Store to SRAM
+                REP #$20        ;
+                INY         ; Y+1
+                DEC $0E         ; Check if we wrote to all SRAM
+                BNE .loop       ; Back if we haven't
+                TXA         ; X->A
+                CLC         ;\
+                ADC #$0008      ;/
+                TAX         ; A->X
+                BRA .setup      ; Back we go
 
             .end
-                SEP #$30		;
-                PHB			;\
-                PHA			; | Set DBR
-                PLB			;/
-                LDX $010A		; Get game file
-                JML $809BCF		;
+                SEP #$30        ;
+                PHB         ;\
+                PHA         ; | Set DBR
+                PLB         ;/
+                LDX $010A       ; Get game file
+                JML $809BCF     ;
 
 
             LoadGame:
-                ;STZ $0DD5		;\ Restore old code
-                ;STZ $0DB3		;/
-                PHB			;
-                PHK			;
-                PLB			;
-                LDY $010A		; Get game file 
-                LDA BINC,y		; Get bank byte to increase by
-                STA $0D			;
-                TYA			;\
-                ASL A			; | Y*2
-                TAY			;/
-                REP #$30		; A, X, Y = 16-bit
-                LDA INC,y		;\ Read low and high byte to increase by
-                STA $0B			;/
+                ;STZ $0DD5      ;\ Restore old code
+                ;STZ $0DB3      ;/
+                PHB         ;
+                PHK         ;
+                PLB         ;
+                LDY $010A       ; Get game file 
+                LDA BINC,y      ; Get bank byte to increase by
+                STA $0D         ;
+                TYA         ;\
+                ASL A           ; | Y*2
+                TAY         ;/
+                REP #$30        ; A, X, Y = 16-bit
+                LDA INC,y       ;\ Read low and high byte to increase by
+                STA $0B         ;/
             %LoadIfStarted()
                 LDX #$0000
             .setup
@@ -2553,7 +2553,7 @@ else
                 BEQ +
                 JML $809B6D           
 
-            INITSRAM_BIT:		; FIXED
+            INITSRAM_BIT:       ; FIXED
                 db $04,$02,$01
             INITSRAM:
                 SEP #$30
@@ -2562,75 +2562,75 @@ else
                 BRA INITIT
 
                 +
-                PHB			;\
-                PHK			; | Set DBR
-                PLB			;/
-                LDA $0DDE		;\ If we don't want to erase any file, don't even waste time
-                BEQ EndIt		;/
-            INITIT:				;
-                STA $0D			; Store the files we want to erase in $0D
-                REP #$10		;
-            Redo:				;
-                SEP #$20		;
-                LDY #$0002		;\
-                LDX #$0000		; |
-                LDA $0D			; |
-                BEQ EndIt		; |
-                AND #$01		; |
-                BNE Clear		; |
-                DEY			; | Erase the correct SRAM addr.
-                LDA $0D			; |
-                AND #$02		; |
-                BNE Clear		; |
-                DEY			; |
-                LDA $0D			; |
-                AND #$04		; |
-                BNE Clear		;/
+                PHB         ;\
+                PHK         ; | Set DBR
+                PLB         ;/
+                LDA $0DDE       ;\ If we don't want to erase any file, don't even waste time
+                BEQ EndIt       ;/
+            INITIT:             ;
+                STA $0D         ; Store the files we want to erase in $0D
+                REP #$10        ;
+            Redo:               ;
+                SEP #$20        ;
+                LDY #$0002      ;\
+                LDX #$0000      ; |
+                LDA $0D         ; |
+                BEQ EndIt       ; |
+                AND #$01        ; |
+                BNE Clear       ; |
+                DEY         ; | Erase the correct SRAM addr.
+                LDA $0D         ; |
+                AND #$02        ; |
+                BNE Clear       ; |
+                DEY         ; |
+                LDA $0D         ; |
+                AND #$04        ; |
+                BNE Clear       ;/
             EndIt:
-                SEP #$20		;
-                LDA $0DDE		;\
-                CMP #$0F		; | If this is not the erase game mode, branch
-                BEQ EndLoad		;/
-                PLB			;
-                SEP #$10		;
-                LDY #$02		; Old code
-                JML $809B43  		; Return
+                SEP #$20        ;
+                LDA $0DDE       ;\
+                CMP #$0F        ; | If this is not the erase game mode, branch
+                BEQ EndLoad     ;/
+                PLB         ;
+                SEP #$10        ;
+                LDY #$02        ; Old code
+                JML $809B43         ; Return
 
             Clear:
                 TRB $0D
-                LDA SAVETable+7,x	;\
-                CLC			; | Get the bank byte for SRAM
-                ADC BINC,y		; |
-                STA $05			;/
-                REP #$20		; A, X, Y = 16-bit
-                LDA SAVETable,x		;\ 
-                BEQ Redo		; | Read size
-                STA $0E			;/
-                PHY			; FIXED
-                TYA			;\
-                AND #$00FF		; |
-                ASL A			; | Y*2
-                TAY			;/
-                LDA SAVETable+5,x	;\
-                CLC			; | Get SRAM address
-                ADC INC,y		; |
-                STA $03			;/
-                LDY #$0000		; Y = #$0000
+                LDA SAVETable+7,x   ;\
+                CLC         ; | Get the bank byte for SRAM
+                ADC BINC,y      ; |
+                STA $05         ;/
+                REP #$20        ; A, X, Y = 16-bit
+                LDA SAVETable,x     ;\ 
+                BEQ Redo        ; | Read size
+                STA $0E         ;/
+                PHY         ; FIXED
+                TYA         ;\
+                AND #$00FF      ; |
+                ASL A           ; | Y*2
+                TAY         ;/
+                LDA SAVETable+5,x   ;\
+                CLC         ; | Get SRAM address
+                ADC INC,y       ; |
+                STA $03         ;/
+                LDY #$0000      ; Y = #$0000
             .loop
-                SEP #$20		;
-                LDA #$00		;\ Write zero to SRAM
-                STA [$03],y		;/
-                REP #$20		;
-                INY			; Y+1
-                DEC $0E			;\ Loop until we wrote everything
-                BNE .loop		;/
-                TXA			;\
-                CLC			; |
-                ADC #$0008		; | Get the next table entry
-                TAX			; |
-                PLY			; FIXED
-                SEP #$20		;/
-                BRA Clear+2		;
+                SEP #$20        ;
+                LDA #$00        ;\ Write zero to SRAM
+                STA [$03],y     ;/
+                REP #$20        ;
+                INY         ; Y+1
+                DEC $0E         ;\ Loop until we wrote everything
+                BNE .loop       ;/
+                TXA         ;\
+                CLC         ; |
+                ADC #$0008      ; | Get the next table entry
+                TAX         ; |
+                PLY         ; FIXED
+                SEP #$20        ;/
+                BRA Clear+2     ;
 
         else
             org $00FFD8
