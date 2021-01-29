@@ -1,9 +1,3 @@
-
-!use_custom_midway_bar = $01    ; $00 = no, $01 = yes
-                                ; if you are already using objectool, set this to $00
-
-!intro_level = $00C5            ; must be $01C5 when lm's display message hack is applied (automaticallyd done btw)
-
 ;!freeram: timer1
 ;!freeram+1: timer2
 ;!freeram+2: timer3
@@ -17,7 +11,7 @@
 ;!freeram+10: music played right before the death jingle
 ;!freeram+11: letter update request / layer 2 collision backup
 
-
+math pri on
 
 !sa1	= 0
 !dp	= $0000
@@ -36,6 +30,27 @@ if read1($00FFD5) == $23
     !7ED000 = $40D000       ; $7ED000 if LoROM, $40D000 if SA-1 ROM.
 endif
 
+!intro_level    = $00C5     ; must be $01C5 when lm's display message hack is applied (automatically done btw)
+                            ; the switch doesn't happen if using the LM 3.21 sprite 19 fix
+
+!intro_sublevel = !intro_level
+
+; Check for LM old sprite 19 fix (new fix has NOP : JSL : NOP, old one has NOP #6).
+; Reset to 1C5 only if using the old fix and starting on a submap.
+if read2($01E762) == $EAEA && read1($009EF0) != $00
+    !intro_sublevel = !intro_level|$0100
+endif
+
+; Check which channel is used for windowing HDMA, for SA-1 v1.35 (H)DMA remap compatibility.
+; It will be 7 on lorom or with SA-1 <1.35, and 1 with SA-1 >=1.35.
+!WindowChannel = log2(read1($0092A1))
+
+; Check if using SA-1 v1.40+, which means MaxTile is used.
+if !sa1 && read3($0084C0) == $5A123 && read1($0084C3) >= 140
+    !MaxTile = 1
+else
+    !MaxTile = 0
+endif
 
 if read1($05DAA3) == $5C    ; endif is at EOF
     print "Error: This patch is not compatible with the Multiple Midway Points patch any more. Insertion aborted. See the first note in README."
@@ -198,7 +213,7 @@ Prompt:
     STZ $41
     STZ $42
     STZ $43
-    LDA #$80
+    LDA.b #1<<!WindowChannel
     TRB $0D9F|!addr
     RTL
 
@@ -284,7 +299,7 @@ Retry:
     STZ $41
     STZ $42
     STZ $43
-    LDA #$80
+    LDA.b #1<<!WindowChannel
     TRB $0D9F|!addr
     LDA #$02
     STA $44
@@ -338,7 +353,7 @@ Retry:
     STA $43
     LDA #$22
     STA $44
-    LDA #$80
+    LDA.b #1<<!WindowChannel
     TSB $0D9F|!addr
     RTL
 
@@ -733,12 +748,12 @@ endif
     BEQ .ret
     REP #$20
     LDA #$2604
-    STA $4370
+    STA $4300+!WindowChannel*$10
     LDA #.table
-    STA $4372
+    STA $4302+!WindowChannel*$10
     SEP #$20
     LDA.b #.table>>16
-    STA $4374
+    STA $4304+!WindowChannel*$10
 .ret
     RTS
 .table
@@ -771,11 +786,11 @@ endif
     LDX #$04
 -
     LDA.l $009277|!bank,x
-    STA $4370,x
+    STA $4300+!WindowChannel*$10,x
     DEX
     BPL -
     LDA #$00
-    STA $4377
+    STA $4307+!WindowChannel*$10
     RTS
 
 .pos_x
@@ -871,20 +886,15 @@ endif
 CalcEntrance:
     PHX
     LDA $13BF|!addr
-        BNE +
-        ; assumption = level 0 <=> intro
-        LDA.b #!intro_level
-        STA !freeram+3
-        LDA $01E762	;check if lm's shift+f8 hack is installed
-        CMP #$EA
-        BNE ++
-        LDA #$01
-        BRA +++
-++
-        LDA #$00	;LDA.b #!intro_level>>8
-+++
-        STA !freeram+4
-        BRA ++
+    BNE +
+    
+    ; assumption = level 0 <=> intro
+    rep #$20
+    lda.w #!intro_sublevel
+    sta !freeram+3
+    sep #$20
+
+    BRA ++
 +
     CMP #$25
     BCC +
@@ -924,11 +934,11 @@ CalcEntrance:
 
 
 HardSave:
-        LDA $0109|!addr
-        BEQ +
-        CMP.b #!intro_level+$24 ; intro
-        BEQ +
-        RTS     ; filters titlescreen, etc
+    LDA $0109|!addr
+    BEQ +
+    CMP.b #!intro_level+$24 ; intro
+    BEQ +
+    RTS     ; filters titlescreen, etc
 +
     PHX
     LDA $13BF|!addr
@@ -939,11 +949,11 @@ HardSave:
     STA.l !freeram_checkpoint,x
     SEP #$20
 
-        ; we won't rely on $13CE anymore (to support the intro level)
-        LDX $13BF|!addr
-        LDA $1EA2|!addr,x
-        ORA #$40
-        STA $1EA2|!addr,x
+    ; we won't rely on $13CE anymore (to support the intro level)
+    LDX $13BF|!addr
+    LDA $1EA2|!addr,x
+    ORA #$40
+    STA $1EA2|!addr,x
 
     PLX
     RTS
@@ -1085,12 +1095,12 @@ Request:
 
 
 GetPromptType:
-        LDA $0109|!addr
-        BEQ +
-        CMP.b #!intro_level+$24     ; intro
-        BEQ +
-        LDA #$04                    ; filters titlescreen, etc
-        RTS
+    LDA $0109|!addr
+    BEQ +
+    CMP.b #!intro_level+$24     ; intro
+    BEQ +
+    LDA #$04                    ; filters titlescreen, etc
+    RTS
 +
     LDX $13BF|!addr
 ;	BNE +
@@ -1180,11 +1190,12 @@ GeneralInit0:                       ; earlier than GeneralInit
     ; too early for amk
     ;LDA #$05
     ;STA $1DF9|!addr
-        ; done by HardSave
-        ;LDX $13BF|!addr
-        ;LDA $1EA2|!addr,x
-        ;ORA #$40
-        ;STA $1EA2|!addr,x
+    
+    ; done by HardSave
+    ;LDX $13BF|!addr
+    ;LDA $1EA2|!addr,x
+    ;ORA #$40
+    ;STA $1EA2|!addr,x
 ++
 
     LDA !freeram+5
@@ -1413,10 +1424,10 @@ ScreenIndexAdjust:
 
 
 MidbarHijack:
-        LDA $0109|!addr
-        BEQ +
-        CMP.b #!intro_level+$24     ; intro
-        BNE .do_nothing             ; filters titlescreen, etc
+    LDA $0109|!addr
+    BEQ +
+    CMP.b #!intro_level+$24     ; intro
+    BNE .do_nothing             ; filters titlescreen, etc
 +
     PHX
     REP #$20
@@ -1617,29 +1628,29 @@ if !sa1 == 0
     ADC $01
     STA $01
 else
-        STZ $2250       ; Set multiplication mode.
+    STZ $2250       ; Set multiplication mode.
 
-        REP #$20        ; Accum (16-bit)
+    REP #$20        ; Accum (16-bit)
     TXA
-        AND #$00FF      ; Mask out high byte.
-        STA $2251       ; Write first multiplicand.
+    AND #$00FF      ; Mask out high byte.
+    STA $2251       ; Write first multiplicand.
     LDA $04
-        AND #$00FF      ; Mask out high byte.
-        STA $2253       ; Write second multiplicand.
-        NOP : BRA $00   ; Wait 5 cycles.
-        LDA $2306       ; Read multiplication product.
+    AND #$00FF      ; Mask out high byte.
+    STA $2253       ; Write second multiplicand.
+    NOP : BRA $00   ; Wait 5 cycles.
+    LDA $2306       ; Read multiplication product.
     STA $00
 
-        STZ $2250       ; Set multiplication mode.
+    STZ $2250       ; Set multiplication mode.
 
     TXA
-        AND #$00FF      ; Mask out high byte.
-        STA $2251       ; Write first multiplicand.
+    AND #$00FF      ; Mask out high byte.
+    STA $2251       ; Write first multiplicand.
     LDA $05
-        AND #$00FF      ; Mask out high byte.
-        STA $2253       ; Write second multiplicand.
-        NOP : BRA $00   ; Wait 5 cycles.
-        LDA $2306       ; Read multiplication product.
+    AND #$00FF      ; Mask out high byte.
+    STA $2253       ; Write second multiplicand.
+    NOP : BRA $00   ; Wait 5 cycles.
+    LDA $2306       ; Read multiplication product.
     CLC
     ADC $01
     STA $01
@@ -1654,10 +1665,10 @@ endif
 
 ; always spawn the midway bar if another checkpoint is being activated (i.e. every checkpoint has the same priority) 
 MidbarSpawn:
-        LDA $0109|!addr
-        BEQ +
-        CMP.b #!intro_level+$24	; intro
-        BNE .true                   ; filters titlescreen, etc
+    LDA $0109|!addr
+    BEQ +
+    CMP.b #!intro_level+$24	; intro
+    BNE .true                   ; filters titlescreen, etc
 +
     LDA $1EA2|!addr,x
     AND #$40
@@ -1678,17 +1689,14 @@ MidbarSpawn:
     BCS +
     ; main midway settings
     LDA $13BF|!addr
-        BNE .cnt
-        ; assumption = level 0 <=> intro
-        REP #$20
-        LDA $01E762	;check if lm's shift+f8 hack is installed
-        CMP #$EAEA
-        BNE +++
-        LDA.w #!intro_level|$0100
-        BRA ++
-+++
-        LDA.w #!intro_level
-        BRA ++
+    BNE .cnt
+    
+    ; assumption = level 0 <=> intro
+    rep #$20
+    lda.w #!intro_sublevel
+
+    BRA ++
+
 .cnt
     REP #$20
     AND #$00FF
@@ -1755,18 +1763,11 @@ InitCheckpointRam:
     DEY
     BPL -
 
-        ; intro
-        LDA.b #!intro_level
-        STA !freeram_checkpoint
-        LDA $01E762	;check if lm's shift+f8 hack is installed
-        CMP #$EA
-        BNE ++
-        LDA #$01
-        BRA +++
-++
-        LDA #$00	;LDA.b #!intro_level>>8
-+++
-        STA !freeram_checkpoint+1
+    ; intro
+    rep #$20
+    lda.w #!intro_sublevel
+    sta !freeram_checkpoint
+    sep #$20
 
     ; orig
     LDA #$EB
@@ -1887,9 +1888,10 @@ VanillaMidwayDestFix:
 
 
 StartSelectExit:
-        ; assumption = level 0 <=> intro
-        LDA $13BF|!addr
-        BEQ ++
+    ; assumption = level 0 <=> intro
+    LDA $13BF|!addr
+    BEQ ++
+    
     PHX
     JSR GetPromptType
     PLX
@@ -1931,9 +1933,23 @@ endif
 
 ; handling compatibility (sprite init facing fix)
 if read1($05D971) == $22
-    print "Warning: You already inserted Sprite Initial Facing patch. The setting in retry_table.asm will be ignored."
+    print "Warning: You inserted an old version of the Sprite Initial Facing patch."
+    print "The setting in retry_table.asm will be ignored, but it's recommended you patch the newest version."
+elseif read1($05D984) == $22
+    print "Warning: You inserted the Sprite Initial Facing patch."
+    print "The setting in retry_table.asm will be ignored."
 else
-    org $05D971
+    if read1($05D971) == $5C
+        print "Warning: old Retry's Sprite Initial Facing hijack detected."
+        print "The old one will be removed and replaced with the newest version."
+
+        autoclean read3($05D971+1)
+
+        org $05D971
+            lda.l $05D758|!bank,x   ; Original code
+    endif
+
+    org $05D984
     autoclean JML InitFace1
 
     org $05D9FC
@@ -1943,7 +1959,12 @@ else
     autoclean JML InitFace3
 
     freecode
+
     InitFace1:
+        sta $02
+        and #$03
+        pha
+
         if !sprite_initial_face_fix == 0
             PHX
             LDX $010B|!addr
@@ -1955,18 +1976,18 @@ else
             BEQ +
         ++
         endif
-        LDA $94
-        STA $D1		; new
-        LDA $96		; new
-        STA $D3		; new
-        LDA $97		; new
-        STA $D4		; new
-        LDA.l $05D758|!bank,x
-        STA $D2		; new
-        JML $05D975|!bank
-    +
-        LDA.l $05D758|!bank,x
-        JML $05D975|!bank
+
+        lda $94
+        sta $D1
+        lda $95
+        sta $D2
+        lda $96
+        sta $D3
+        lda $97
+        sta $D4
+
+    +   pla
+        jml $05D988|!bank
 
     InitFace2:
         STA $95
@@ -2031,16 +2052,17 @@ mmp_main:
     BEQ +
     CMP.b #!intro_level+$24
     BNE .code_05D8A2	; filters titlescreen, etc
-        ; assumption = level 0 <=> intro
-        LDA $1EA2|!addr		; check the midway flag
-        AND #$40
-        BNE ++
-        LDA.b #!intro_level+$24
-        BRA .code_05D8A2
-    ++
-        LDX #$00
-        LDY #$00
-        BRA ++
+    
+    ; assumption = level 0 <=> intro
+    LDA $1EA2|!addr		; check the midway flag
+    AND #$40
+    BNE ++
+    LDA.b #!intro_level+$24
+    BRA .code_05D8A2
+++
+    LDX #$00
+    LDY #$00
+    BRA ++
 +
     REP #$20
     STZ $1A
@@ -2640,6 +2662,7 @@ org $0081AA
 autoclean JML HDMA_off
 
 freecode
+
 HDMA_off:
     LDA $0100|!addr
     CMP #$10
@@ -2655,7 +2678,7 @@ HDMA_off:
 ++
     LDA #$80
     STA $2100
-    JML $0081AF
+    JML $0081AF|!bank
 
 
 

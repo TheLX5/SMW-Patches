@@ -1,4 +1,4 @@
-include
+@includefrom retry.asm
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; global settings                       ;
@@ -39,6 +39,8 @@ include
                                 ; if you are already using SRAM Plus, this option will be ignored.
                                 ; * whenever you change this option and apply the patch, erase the previous srm file from your hard drive.
 
+!use_custom_midway_bar = $01    ; $00 = no, $01 = yes
+                                ; if you are already using objectool, set this to $00
 
 !max_custom_midway_num = $08    ; the number of custom midway bars (custom object) allowed in one sublevel
                                 ; the bigger, the more free ram address is required
@@ -81,9 +83,9 @@ include
 ;;; $04 = no retry (as if "no" is chosen automatically)
 
 .effect
-db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;Levels 0~F
-db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;Levels 10~1F
-db $00,$00,$00,$00,$00                                              ;Levels 20~24
+db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;Levels 000~00F
+db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;Levels 010~01F
+db $00,$00,$00,$00,$00                                              ;Levels 020~024
 db     $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;Levels 101~10F
 db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;Levels 110~11F
 db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;Levels 120~12F

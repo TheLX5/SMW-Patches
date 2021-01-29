@@ -1,4 +1,4 @@
-includefrom "retry.asm"
+@includefrom retry.asm
 
 ; This routine will be called when the level is reset by the retry system, or entered from the overworld.
 ; Unlike init routines in uberasm, it's not executed during regular level transitions.

@@ -58,6 +58,16 @@
 
 11. (ver 2.06b) Fixed window garbage that appeared for a frame upon closing the retry prompt. (lx5)
 
+12. (ver 2.06c) Moved !use_custom_midway_bar define to retry_table.asm (it makes more sense to have it together with the other settings). (KevinM)
+
+13. (ver 2.06c) Updated the Sprite Initial Facing fix to the newest version, to solve an issue with LM position entrance method 2. Also updated to detect old and new versions of the standalone fix. If patched to a ROM that used old Retry, the old fix will be replaced automatically with the new one. Thanks to Darolac for reporting this. (KevinM)
+
+14. (ver 2.06c) Fixed two bugs related to the intro level. (KevinM)
+  - If using the old LM sprite 19 fix (shift+F8 hijack) and placing Mario's starting position on the main map, dying on the intro level would warp him from level C5 to level 1C5.
+  - If using the new LM sprite 19 fix (LM 3.20+ silent hijack), dying on the intro level would warp Mario from level C5 to level 1C5.
+Also the check for LM's hijacks was updated to be done at compile time with Asar's read function, rather than at runtime by LDAing certain rom addresses.
+
+15. (ver 2.06c) Added compatibility with SA-1 pack v1.35+, by remapping the windowing channel automatically from 7 to 1. (KevinM)
 
 **********************************
 * Compatibility Management       *
