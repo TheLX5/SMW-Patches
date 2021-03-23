@@ -73,6 +73,8 @@ Also the check for LM's hijacks was updated to be done at compile time with Asar
 
 17. (ver 2.06c) Added !prompt_letters_palette and !prompt_cursor_palette defines in retry_table.asm to easily change the palette used by the retry prompt.
 
+18. (ver 2.06c) Changed !freeram_SA1, !freeram_checkpoint_SA1 and !freeram_custobjdata_SA1 from $40B4XX to $40C0XX to avoid RAM conflicts with MaxTile.
+
 **********************************
 * Compatibility Management       *
 **********************************

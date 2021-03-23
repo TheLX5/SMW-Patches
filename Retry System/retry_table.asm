@@ -52,9 +52,9 @@
 !freeram_custobjdata = $7FB4CC  ; (!max_custom_midway_num*4)+1 bytes (33 bytes for $08)
 
 ; *** in case you're using SA-1 *** (if not, you may skip this)
-!freeram_SA1 = $40B400              ; 12 bytes
-!freeram_checkpoint_SA1 = $40B40C   ; 192 bytes
-!freeram_custobjdata_SA1 = $40B4CC  ; (!max_custom_midway_num*4)+1 bytes (33 bytes for $08)
+!freeram_SA1 = $40C000              ; 12 bytes
+!freeram_checkpoint_SA1 = $40C00C   ; 192 bytes
+!freeram_custobjdata_SA1 = $40C0CC  ; (!max_custom_midway_num*4)+1 bytes (33 bytes for $08)
 
 
 ;;; the below is sfx which may be used instead of the death jingle
