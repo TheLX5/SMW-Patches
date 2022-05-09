@@ -29,8 +29,6 @@
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-incsrc "../../../defs.asm"
-
 ; = Defines = ;
 !VisualFix = $01
 ;Whether sprites' hitboxes are adjusted to make them not sink into platforms.
