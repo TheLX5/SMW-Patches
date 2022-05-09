@@ -750,10 +750,6 @@ org $02EDDC
 ;org $038CA5
 ;  bpl carrot_lift_end
 
-org $0191D0
-  jml sprite_conveyor_fix
-org $01927E
-  lda $14
 org $03871F
   jsl lava_platform
 
@@ -769,38 +765,6 @@ freecode
 lava_platform:
   stz $1491|!addr
   jml $01B44F
-
-sprite_conveyor_fix:
-  lda !sprite_on_conveyor,x
-  beq .normal
-  and #$7F
-  dec 
-  beq .right
-.left
-  lda !sprite_on_conveyor,x
-  clc
-  lda !E4,x
-  adc #$01
-  sta !E4,x
-  lda !14E0,x
-  adc #$00
-  jml $0191DE
-.right
-  lda !sprite_on_conveyor,x
-  eor #$00
-  asl  
-  lda !E4,x
-  sbc #$01
-  sta !E4,x
-  lda !14E0,x
-  sbc #$00
-  jml $0191DE
-
-.normal
-  lda !E4,x
-  clc 
-  adc.w $9284-1,y
-  jml $0191D6
 
 megamole_fix:
 lda !190F,x
@@ -1076,8 +1040,8 @@ dw .DoCheckMegaMole
   db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$E0
   db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$F0
 .custom_interaction_table
-  db $02,$02,$01,$02,$02,$02,$02,$02,$02,$02,$01,$02,$02,$02,$02,$02  ;$00
-  db $02,$02,$02,$02,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$10
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$00
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$10
   db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$20
   db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$30
   db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$40
@@ -1179,7 +1143,7 @@ JMP .DontCheck
 .custom_leniency_table
   db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$00
   db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$10
-  db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency+$01,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$20
+  db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$20
   db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$30
   db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$40
   db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$50
@@ -1376,16 +1340,11 @@ jmp .Left
 
 
   .Right
-lda !sprite_on_conveyor,x
-bne +
-
 LDA !B6,x
 SEC
 SBC !B6|!dp,y
-bmi +
-jmp .SkipTurn
-;BEQ .SkipTurn2
-;BPL .SkipTurn2
+BMI +
+JMP .SkipTurn2
 +
 INC $0E              ;increase amount of sprites that were blocked by this platform this frame
 
@@ -1403,37 +1362,6 @@ LDA !SidesKicked
 ORA #$01
 STA !SidesKicked
 +
-
-+++
-phx
-tyx
-lda !sprite_on_conveyor,x
-plx
-and #$7F
-cmp #$02
-bne ..not_conveyor
-LDA !slot_a_x_lo
-SEC
-SBC !E4,y       ;x disp get
-CLC
-ADC !slot_a_width         ;add x disp and sprite width
-clc 
-adc #$01
-STA $0F
-txa 
-cmp $15E9|!addr
-bcs +
-inc $0F
-+
-LDA !slot_a_x_lo
-clc
-adc $0F         ;platform x - (sprite width + disp)
-STA !E4,x
-LDA !slot_a_x_hi
-SBC #$00
-STA !14E0,x
-jmp .push_right_end
-..not_conveyor
 
 ;sprite's x pos = platform x + (platform width + sprite x disp)
 phx
@@ -1503,12 +1431,7 @@ BEQ .NotKickedRight
 
 ;kicked sprites don't get told that they're hitting a wall, cause they'll try to activate ? blocks
 STZ !157C,x
-lda !sprite_on_conveyor,x
-bne +
 JSR KickedRt
-JMP .DontCheck
-+
-jsr KickedRt2
 JMP .DontCheck
 
   .NotKickedRight
@@ -1542,9 +1465,6 @@ JMP .SkipTurn
 
 
   .Left
-lda !sprite_on_conveyor,x
-bne +
-
 LDA !B6,x
 SEC
 SBC !B6|!dp,y
@@ -1567,39 +1487,6 @@ LDA !SidesKicked
 ORA #$02
 STA !SidesKicked
 +
-+++
-;sprite's x pos = platform x - (sprite width - sprite x disp)
-
-phx
-tyx
-lda !sprite_on_conveyor,x
-plx
-and #$7F
-cmp #$01
-bne .not_conveyor
-LDA !slot_b_x_lo
-SEC
-SBC !E4,x       ;x disp get
-CLC
-ADC !slot_b_width         ;add x disp and sprite width
-sec 
-sbc #$01
-STA $0F
-txa 
-cmp $15E9|!addr
-bcs +
-dec $0F
-+
-LDA !slot_a_x_lo
-sec
-sbc $0F         ;platform x - (sprite width + disp)
-STA !E4,x
-LDA !slot_a_x_hi
-SBC #$00
-STA !14E0,x
-jmp .push_left_end
-
-.not_conveyor
 
 phx
 lda.w !7FAB10,x
@@ -1675,14 +1562,7 @@ BEQ .NotKickedLeft
 ;kicked sprites don't get told that they're hitting a wall, cause they'll try to activate ? blocks
 LDA #$01
 STA !157C,x
-lda !B6,x
-beq +
-lda !sprite_on_conveyor,x
-bne +
 JSR KickedRt
-JMP .DontCheck
-+
-jsr KickedRt2
 JMP .DontCheck
 
    .NotKickedLeft
