@@ -31,6 +31,17 @@ pushpc
 pullpc 
 
     p_switch_load:
+        lda !163E,x
+        bne .no_solid
+        jsl !get_sprite_clipping_a
+        lda !D8,x
+        sta $05
+        lda !14D4,x
+        sta $0B
+        lda #$10
+        sta $07
+        jsl !sprite_solid_special
+    .no_solid
         lda #!dss_id_p_switch
         jsl find_and_queue_gfx
         bcs .loaded

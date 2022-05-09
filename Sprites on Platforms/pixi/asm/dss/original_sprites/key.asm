@@ -12,6 +12,15 @@ pushpc
 pullpc
 
     key_write:
+        jsl !get_sprite_clipping_a
+        lda !D8,x
+        sta $05
+        lda !14D4,x
+        sta $0B
+        lda #$10
+        sta $07
+        jsl !sprite_solid_special
+        
         lda #!dss_id_key
         jsl find_and_queue_gfx
         bcs .loaded
