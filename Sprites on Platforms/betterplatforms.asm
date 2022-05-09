@@ -248,6 +248,20 @@ if read1($00FFD5) == $23
 	!SpriteBlockTable = !SpriteBlockTable_SA1
 endif
 
+;# Vanilla interaction defines
+    !slot_b_x_lo		= $00
+    !slot_b_x_hi		= $08
+    !slot_b_y_lo		= $01
+    !slot_b_y_hi		= $09
+    !slot_b_height		= $03
+    !slot_b_width		= $02
+    !slot_a_x_lo		= $04
+    !slot_a_x_hi		= $0A
+    !slot_a_y_lo		= $05
+    !slot_a_y_hi		= $0B
+    !slot_a_height		= $07
+    !slot_a_width		= $06
+
 
 ;;;;;
 ; clear our sprite table when a new sprite is spawned along with the vanilla ones
