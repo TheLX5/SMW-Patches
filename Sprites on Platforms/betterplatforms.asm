@@ -29,7 +29,7 @@
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-incsrc pixi/asm/ExtraDefines/dynamic_spritesets_defines.asm
+incsrc "../../../defs.asm"
 
 ; = Defines = ;
 !VisualFix = $01
@@ -566,39 +566,7 @@ if !SpritePeas == $00
 
 endif
 
-;p-switch
-
-if !SolidP == $01
-
-  org $01A1FD             ;StunPow:
-  JSL PFix
-  LDY !163E,x
-
-endif
-if !SolidP == $00
-
-  org $01A1FD
-  LDY !163E,x
-  BEQ $16
-
-endif
-
-
 ;key
-;make solid to sprites part
-if !SolidKey == $01
-
-  org $01A1F9
-  JML KeyFix
-
-endif
-if !SolidKey == $00
-
-  org $01A1F9
-  LDA #$EC
-  BRA $25
-
-endif
 
 ;make mario move with key if he stands on it
 org $0195F2
@@ -705,7 +673,7 @@ if !VisualFix == $01
   !VisualOffset = $02
 
   org $03B620
-  db $0A+!VisualOffset,$15+!VisualOffset,$12+!VisualOffset,$08+!VisualOffset,$0E+!VisualOffset,$0E+!VisualOffset,$18+!VisualOffset,$30+!VisualOffset        ;00-07
+  db $0B+!VisualOffset,$15+!VisualOffset,$12+!VisualOffset,$08+!VisualOffset,$0E+!VisualOffset,$0E+!VisualOffset,$18+!VisualOffset,$30+!VisualOffset        ;00-07
   db $10+!VisualOffset,$18,$02+!VisualOffset,$03+!VisualOffset,$0F+!VisualOffset,$10+!VisualOffset,$14+!VisualOffset,$12+!VisualOffset            ;08-0F
   db $20+!VisualOffset,$40+!VisualOffset,$34+!VisualOffset,$74+!VisualOffset,$0C+!VisualOffset,$0E+!VisualOffset,$18+!VisualOffset,$45+!VisualOffset        ;10-17
   db $3A+!VisualOffset,$2A+!VisualOffset,$1A+!VisualOffset,$0A+!VisualOffset,$30+!VisualOffset,$1B+!VisualOffset,$20+!VisualOffset,$12+!VisualOffset        ;18-1F
@@ -716,7 +684,7 @@ if !VisualFix == $01
 
 
   org $03B65C         ;player y clip disp
-  db $05+!VisualOffset,$13+!VisualOffset,$0F+!VisualOffset,$17+!VisualOffset
+  db $05+!VisualOffset,$12,$0F+!VisualOffset,$17+!VisualOffset
   ;db $06+!VisualOffset,$14+!VisualOffset,$10+!VisualOffset,$18+!VisualOffset
 
   org $03B660         ;player y clip height
@@ -782,6 +750,10 @@ org $02EDDC
 ;org $038CA5
 ;  bpl carrot_lift_end
 
+org $0191D0
+  jml sprite_conveyor_fix
+org $01927E
+  lda $14
 org $03871F
   jsl lava_platform
 
@@ -791,10 +763,44 @@ org $03871F
 
 freecode
 
+  dl BeSolidToSprites
+  dl BeSolidToSpritesSpecialClip
+
 lava_platform:
   stz $1491|!addr
   jml $01B44F
 
+sprite_conveyor_fix:
+  lda !sprite_on_conveyor,x
+  beq .normal
+  and #$7F
+  dec 
+  beq .right
+.left
+  lda !sprite_on_conveyor,x
+  clc
+  lda !E4,x
+  adc #$01
+  sta !E4,x
+  lda !14E0,x
+  adc #$00
+  jml $0191DE
+.right
+  lda !sprite_on_conveyor,x
+  eor #$00
+  asl  
+  lda !E4,x
+  sbc #$01
+  sta !E4,x
+  lda !14E0,x
+  sbc #$00
+  jml $0191DE
+
+.normal
+  lda !E4,x
+  clc 
+  adc.w $9284-1,y
+  jml $0191D6
 
 megamole_fix:
 lda !190F,x
@@ -1015,9 +1021,18 @@ BCC .DontCheck2
 ;do this if sprites intersect (platform = y, sprite = x)
 ;moved the sprite num checks down here so they aren't all executed 20 times every single frame
 phx
+lda.w !7FAB10,x
+and #$08
+beq +
+lda.w !7FAB9E,x
+tax
+lda.w .custom_interaction_table,x
+bra ++
++
 lda !9E,x
 tax 
 lda.w .normal_interaction_table,x
+++
 plx
 asl 
 clc
@@ -1060,6 +1075,23 @@ dw .DoCheckMegaMole
   db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$D0
   db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$E0
   db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$F0
+.custom_interaction_table
+  db $02,$02,$01,$02,$02,$02,$02,$02,$02,$02,$01,$02,$02,$02,$02,$02  ;$00
+  db $02,$02,$02,$02,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$10
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$20
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$30
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$40
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$50
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$60
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$70
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$80
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$90
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$A0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$B0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$C0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$D0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$E0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$F0
 
 .DoCheckMegaMole
   LDA $01
@@ -1090,10 +1122,20 @@ dw .DoCheckMegaMole
   jmp .DoCheck
 
   .DoCheckRaft
+
 phx
-lda !9E,y
+lda.w !7FAB10,y
+and #$08
+beq +
+lda.w !7FAB9E,y
 tax
-lda.w .normal_leniency_table,x 
+lda.w .custom_leniency_table,x
+bra ++
++
+lda !9E,y
+tax 
+lda.w .normal_leniency_table,x
+++
 plx
 sta $0F
 
@@ -1134,6 +1176,24 @@ JMP .DontCheck
   db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$D0
   db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$E0
   db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$F0
+.custom_leniency_table
+  db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$00
+  db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$10
+  db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency+$01,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$20
+  db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$30
+  db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$40
+  db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$50
+  db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$60
+  db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$70
+  db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$80
+  db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$90
+  db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$A0
+  db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$B0
+  db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$C0
+  db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$D0
+  db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$E0
+  db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$F0
+
 
 .normal_leniency_bottom_table
   db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$00
@@ -1152,7 +1212,25 @@ JMP .DontCheck
   db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$D0
   db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$E0
   db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$F0
+.custom_leniency_bottom_table
+  db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$00
+  db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$10
+  db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$20
+  db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$30
+  db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$40
+  db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$50
+  db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$60
+  db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$70
+  db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$80
+  db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$90
+  db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$A0
+  db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$B0
+  db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$C0
+  db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$D0
+  db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$E0
+  db !Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency,!Leniency  ;$F0
 
+  
 
   .DoCheck
 
@@ -1161,9 +1239,18 @@ JMP .DontCheck
 ;springs get more leniency with hitbox
 
 phx
-lda !9E,y
+lda.w !7FAB10,y
+and #$08
+beq +
+lda.w !7FAB9E,y
 tax
-lda.w .normal_leniency_table,x 
+lda.w .custom_leniency_table,x
+bra ++
++
+lda !9E,y
+tax 
+lda.w .normal_leniency_table,x
+++
 plx
 sta $0F
 
@@ -1207,9 +1294,18 @@ JMP .DontCheck
 ;if not top, check if bottom, if not that, just subhorz
 
 phx
-lda !9E,y
+lda.w !7FAB10,y
+and #$08
+beq +
+lda.w !7FAB9E,y
 tax
+lda.w .custom_leniency_bottom_table,x
+bra ++
++
+lda !9E,y
+tax 
 lda.w .normal_leniency_bottom_table,x
+++
 sta $0F
 plx 
 LDA $05
@@ -1255,16 +1351,42 @@ PLA
 SEC             ;platform - sprite center x
 SBC $0F
 
-BPL .Left
+BMI .Right
+jmp .Left
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
   .Right
+lda !sprite_on_conveyor,x
+bne +
+
 LDA !B6,x
 SEC
 SBC !B6|!dp,y
-BEQ .SkipTurn2
-BPL .SkipTurn2
-
+bmi +
+jmp .SkipTurn
+;BEQ .SkipTurn2
+;BPL .SkipTurn2
++
 INC $0E              ;increase amount of sprites that were blocked by this platform this frame
 
 LDA !Sides
@@ -1282,8 +1404,74 @@ ORA #$01
 STA !SidesKicked
 +
 
++++
+phx
+tyx
+lda !sprite_on_conveyor,x
+plx
+and #$7F
+cmp #$02
+bne ..not_conveyor
+LDA !slot_a_x_lo
+SEC
+SBC !E4,y       ;x disp get
+CLC
+ADC !slot_a_width         ;add x disp and sprite width
+clc 
+adc #$01
+STA $0F
+txa 
+cmp $15E9|!addr
+bcs +
+inc $0F
++
+LDA !slot_a_x_lo
+clc
+adc $0F         ;platform x - (sprite width + disp)
+STA !E4,x
+LDA !slot_a_x_hi
+SBC #$00
+STA !14E0,x
+jmp .push_right_end
+..not_conveyor
 
 ;sprite's x pos = platform x + (platform width + sprite x disp)
+phx
+lda.w !7FAB10,x
+and #$08
+beq +
+lda.w !7FAB9E,x
+tax
+lda.w .custom_side_right_push_table,x
+bra ++
++
+lda !9E,x
+tax 
+lda.w .normal_side_right_push_table,x
+++
+plx
+cmp #$00
+beq .push_right_spr
+.push_right_platform
+LDA !slot_a_x_lo
+SEC
+SBC !E4,y       ;x disp get
+CLC
+ADC $02         ;add x disp and sprite width
+CLC
+ADC #$04+1      ;+1 to put it one pixel left of the left edge anyway
+STA $0F
+LDA !slot_b_x_lo
+SEC
+SBC $0F         ;platform x - (sprite width + disp)
+STA !E4,y
+LDA !slot_b_x_hi
+SBC #$00
+STA !14E0,y
+bra .push_right_end
+
+
+.push_right_spr
 LDA $00
 SEC
 SBC !E4,x       ;x disp get
@@ -1298,6 +1486,15 @@ STA !E4,x
 LDA $0A
 ADC #$00
 STA !14E0,x
+.push_right_end
+
+
+
+
+
+
+
+
 
 ;turn around the sprite
 LDA !14C8,x
@@ -1306,7 +1503,12 @@ BEQ .NotKickedRight
 
 ;kicked sprites don't get told that they're hitting a wall, cause they'll try to activate ? blocks
 STZ !157C,x
+lda !sprite_on_conveyor,x
+bne +
 JSR KickedRt
+JMP .DontCheck
++
+jsr KickedRt2
 JMP .DontCheck
 
   .NotKickedRight
@@ -1319,13 +1521,36 @@ JMP .DontCheck
   .SkipTurn2
 JMP .SkipTurn
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   .Left
+lda !sprite_on_conveyor,x
+bne +
+
 LDA !B6,x
 SEC
 SBC !B6|!dp,y
 BEQ .SkipTurn2
 BMI .SkipTurn2
-
++
 INC $0E              ;increase amount of sprites that were blocked by this platform this frame
 
 LDA !Sides
@@ -1342,8 +1567,75 @@ LDA !SidesKicked
 ORA #$02
 STA !SidesKicked
 +
-
++++
 ;sprite's x pos = platform x - (sprite width - sprite x disp)
+
+phx
+tyx
+lda !sprite_on_conveyor,x
+plx
+and #$7F
+cmp #$01
+bne .not_conveyor
+LDA !slot_b_x_lo
+SEC
+SBC !E4,x       ;x disp get
+CLC
+ADC !slot_b_width         ;add x disp and sprite width
+sec 
+sbc #$01
+STA $0F
+txa 
+cmp $15E9|!addr
+bcs +
+dec $0F
++
+LDA !slot_a_x_lo
+sec
+sbc $0F         ;platform x - (sprite width + disp)
+STA !E4,x
+LDA !slot_a_x_hi
+SBC #$00
+STA !14E0,x
+jmp .push_left_end
+
+.not_conveyor
+
+phx
+lda.w !7FAB10,x
+and #$08
+beq +
+lda.w !7FAB9E,x
+tax
+lda.w .custom_side_left_push_table,x
+bra ++
++
+lda !9E,x
+tax 
+lda.w .normal_side_left_push_table,x
+++
+plx
+cmp #$00
+beq .push_left_spr
+.push_left_platform
+LDA !slot_a_x_lo
+SEC
+SBC !E4,y       ;x disp get
+CLC
+ADC !slot_a_width         ;add x disp and platform width
+STA $0F
+
+LDA !slot_b_x_lo
+CLC
+ADC $0F         ;platform x + (platform width + disp)
+STA !E4,y
+LDA !slot_b_x_hi
+ADC #$00
+STA !14E0,y
+bra .push_left_end
+
+
+.push_left_spr
 LDA $00
 SEC
 SBC !E4,x       ;x disp get
@@ -1360,6 +1652,20 @@ STA !E4,x
 LDA $0A
 SBC #$00
 STA !14E0,x
+.push_left_end
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ;turn around the sprite
 LDA !14C8,x
@@ -1369,7 +1675,14 @@ BEQ .NotKickedLeft
 ;kicked sprites don't get told that they're hitting a wall, cause they'll try to activate ? blocks
 LDA #$01
 STA !157C,x
+lda !B6,x
+beq +
+lda !sprite_on_conveyor,x
+bne +
 JSR KickedRt
+JMP .DontCheck
++
+jsr KickedRt2
 JMP .DontCheck
 
    .NotKickedLeft
@@ -1391,7 +1704,9 @@ JMP .DontCheck
 LDA !1588,x
 AND #$04
 BEQ +
+
 JMP .DontCheck
+
 +
 
 INC $0E              ;increase amount of sprites that were blocked by this platform this frame
@@ -1481,9 +1796,18 @@ STA !SidesKicked
 ;;;  let sprite stand stuff
 
 phx
+lda.w !7FAB10,x
+and #$08
+beq +
+lda.w !7FAB9E,x
+tax
+lda.w .custom_top_collision_table,x
+bra ++
++
 lda !9E,x
 tax 
 lda.w .normal_top_collision_table,x
+++
 plx
 asl 
 clc
@@ -1522,6 +1846,23 @@ dw .NoYSpd
   db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$D0
   db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$E0
   db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$F0
+.custom_top_collision_table
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$00
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$10
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$20
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$30
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$40
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$50
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$60
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$70
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$80
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$90
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$A0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$B0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$C0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$D0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$E0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$F0
 
 ;applies to platform
 .normal_top_sticky_table
@@ -1541,6 +1882,94 @@ dw .NoYSpd
   db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$D0
   db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$E0
   db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$F0
+.custom_top_sticky_table
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$00
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$10
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$20
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$30
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$40
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$50
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$60
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$70
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$80
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$90
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$A0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$B0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$C0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$D0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$E0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$F0
+
+.normal_side_right_push_table
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$00
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$10
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$20
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$30
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$40
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$50
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$60
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$70
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$80
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$90
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$A0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$B0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$C0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$D0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$E0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$F0
+.custom_side_right_push_table
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$00
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$10
+  db $01,$00,$00,$00,$00,$00,$00,$01,$00,$00,$00,$00,$00,$00,$00,$00  ;$20
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$30
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$40
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$50
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$60
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$70
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$80
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$90
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$A0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$B0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$C0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$D0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$E0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$F0
+
+
+.normal_side_left_push_table
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$00
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$10
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$20
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$30
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$40
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$50
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$60
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$70
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$80
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$90
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$A0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$B0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$C0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$D0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$E0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$F0
+.custom_side_left_push_table
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$00
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$10
+  db $01,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$20
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$30
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$40
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$50
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$60
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$70
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$80
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$90
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$A0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$B0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$C0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$D0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$E0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$F0
 
 .RegularTop
   LDA !190F,x
@@ -1552,9 +1981,18 @@ dw .NoYSpd
 
   .Carryable
   phx
+  lda.w !7FAB10,y
+  and #$08
+  beq +
+  lda.w !7FAB9E,y
+  tax
+  lda.w .custom_top_sticky_table,x
+  bra ++
+  +
   lda !9E,y
   tax 
   lda.w .normal_top_sticky_table,x
+  ++
   plx
   cmp #$00
   bne .ZeroYSpd
@@ -1579,9 +2017,18 @@ jmp .YStand
 
 .CheckTopStand
 phx
+lda.w !7FAB10,y
+and #$08
+beq +
+lda.w !7FAB9E,y
+tax
+lda.w .custom_top_wall_table,x
+bra ++
++
 lda !9E,y
 tax 
 lda.w .normal_top_wall_table,x
+++
 plx
 asl 
 clc
@@ -1617,6 +2064,23 @@ dw .YStand
   db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$A0
   db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$B0
   db $00,$00,$00,$00,$01,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$C0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$D0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$E0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$F0
+.custom_top_wall_table
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$00
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$10
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$20
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$30
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$40
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$50
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$60
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$70
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$80
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$90
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$A0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$B0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$C0
   db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$D0
   db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$E0
   db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$F0
@@ -1721,7 +2185,7 @@ RTS
 KickedRt:
 LDA #$01
 STA $1DF9|!addr
-
+KickedRt2:
 LDA !B6,x   ;turn around and halve speed
 EOR #$FF : INC
 PHA
@@ -2182,43 +2646,6 @@ RTL
 
 
 
-if !SolidKey == $01
-
-  KeyFix:
-
-  if !SolidInMovement == $00
-
-    LDA !AA,x
-    ORA !B6,x
-    BNE .Restore
-
-  endif
-
-  JSL $03B69F|!bank     ;put platform clipping in slot A
-  LDA !D8,x
-  STA $05
-  LDA !14D4,x
-  STA $0B
-  LDA #$10
-  STA $07
-
-  JSL BeSolidToSpritesSpecialClip
-
-
-    .Restore
-        lda #!dss_id_key
-        jsl find_and_queue_gfx
-        bcs .loaded
-        ldy !15EA,x
-        lda #$F0
-        sta $0301|!addr,y
-        jml $01A228
-    .loaded
-        lda !dss_tile_buffer+$00
-        jml $01A222
-
-endif
-
 
 
 
@@ -2284,9 +2711,18 @@ if !SpriteSpring == $01
 
   
 phx
+lda.w !7FAB10,y
+and #$08
+beq +
+lda.w !7FAB9E,y
+tax
+lda.l .custom_springboard_bounce_table,x
+bra ++
++
 lda !9E,y
 tax 
 lda.l .normal_springboard_bounce_table,x
+++
 plx
 asl 
 clc
@@ -2319,6 +2755,24 @@ dw .UrchinNoBounce
   db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$60
   db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$70
   db $00,$00,$00,$00,$00,$00,$01,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$80
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$90
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$A0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$B0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$C0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$D0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$E0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$F0
+
+.custom_springboard_bounce_table
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$00
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$10
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$20
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$30
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$40
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$50
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$60
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$70
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$80
   db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$90
   db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$A0
   db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$B0
@@ -2455,9 +2909,18 @@ dw .UrchinNoBounce
 
 
 phx
+lda.w !7FAB10,y
+and #$08
+beq +
+lda.w !7FAB9E,y
+tax
+lda.l .custom_springboard_rule_table,x
+bra ++
++
 lda !9E,y
 tax 
 lda.l .normal_springboard_rule_table,x
+++
 plx
 asl 
 clc
@@ -2498,7 +2961,23 @@ dw .EnableLittle
   db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$E0
   db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$F0
 
-
+.custom_springboard_rule_table
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$00
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$10
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$20
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$30
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$40
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$50
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$60
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$70
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$80
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$90
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$A0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$B0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$C0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$D0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$E0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$F0
 
 .EnableRegular
   LDA !14C8,y
@@ -2642,16 +3121,24 @@ if !SpritePeas == $01
   JMP .Restore
   +
 
-  wdm
   PHY
   LDA !LastSprite   ;grab the sprite's index
   TAY
 
 
 phx
+lda.w !7FAB10,y
+and #$08
+beq +
+lda.w !7FAB9E,y
+tax
+lda.l .custom_pea_bouncer_rule_table,x
+bra ++
++
 lda !9E,y
 tax 
 lda.l .normal_pea_bouncer_rule_table,x
+++
 plx
 asl 
 clc
@@ -2690,6 +3177,24 @@ jml [$008A]
   db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$E0
   db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$F0
 
+.custom_pea_bouncer_rule_table
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$00
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$10
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$20
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$30
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$40
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$50
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$60
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$70
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$80
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$90
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$A0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$B0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$C0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$D0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$E0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$F0
+
 .normal_pea_bouncer_bounce_table
   db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$00
   db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$10
@@ -2708,6 +3213,23 @@ jml [$008A]
   db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$E0
   db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$F0
 
+.custom_pea_bouncer_bounce_table
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$00
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$10
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$20
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$30
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$40
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$50
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$60
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$70
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$80
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$90
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$A0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$B0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$C0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$D0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$E0
+  db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  ;$F0
 .RegularRule
   LDA #$02          ;put spring into pimmel mode
   STA !1528,x
@@ -2769,10 +3291,20 @@ jml [$008A]
 
   ;bounce some sprites softer
   
+
 phx
+lda.w !7FAB10,y
+and #$08
+beq +
+lda.w !7FAB9E,y
+tax
+lda.l .custom_pea_bouncer_bounce_table,x
+bra ++
++
 lda !9E,y
 tax 
 lda.l .normal_pea_bouncer_bounce_table,x
+++
 plx
 cmp #$00
   BEQ .LittleBounce
@@ -2814,58 +3346,3 @@ cmp #$00
   db $FF,$B5,$AE,$AA,$A6,$A0,$9A,$95
 
 endif
-
-
-if !SolidP == $01
-
-  PFix:
-
-  lda !163E,x
-  bne .Restore
-
-  if !SolidInMovement == $00
-
-    LDA !AA,x
-    ORA !B6,x
-    BNE .Restore
-
-  endif
-
-
-  JSL $03B69F|!bank     ;put platform clipping in slot A
-  LDA !D8,x
-  STA $05
-  LDA !14D4,x
-  STA $0B
-  LDA #$10
-  STA $07
-
-  JSL BeSolidToSpritesSpecialClip
-
-!dss_id_p_switch                ?= $73
-
-    .Restore
-    lda #!dss_id_p_switch
-    jsl find_and_queue_gfx
-    bcs .loaded
-    pla
-    pla
-    pla
-    jml $01A222
-.loaded
-
-  rtl
-
-endif
-
-
-find_and_queue_gfx:
-    pha 
-    lda $01DF78+3+2
-    sta $00
-    lda $01DF78+3+2+1
-    sta $01
-    lda $01DF78+3+2+2
-    sta $02
-    pla 
-    jml [!dp]
